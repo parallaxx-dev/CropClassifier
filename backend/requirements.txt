@@ -2,6 +2,10 @@
 # BreizhCrops Crop Classification - Requirements
 # ============================================
 
+# API
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
 # Core ML / data
 torch>=2.0.0
 numpy>=1.24.0
