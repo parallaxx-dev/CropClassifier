@@ -9,7 +9,7 @@ series in, (predicted_class_name, confidence, all_class_probs) out.
 import numpy as np
 import torch
 
-from config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
+from app.config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
 
 
 def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):

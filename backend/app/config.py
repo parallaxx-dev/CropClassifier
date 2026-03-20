@@ -7,12 +7,16 @@ classmapping.csv from the breizhcrops package — a mismatch here silently
 scrambles ground-truth/prediction labels.
 """
 
+from pathlib import Path
+
 import torch
 
 # ============================================
 # Paths / device
 # ============================================
-CHECKPOINT_PATH = "best_transformer_breizh.pth"   # update path for deployment
+# Resolved relative to this file, not the process's cwd, so it works the same
+# whether uvicorn is launched from backend/ or anywhere else.
+CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_breizh.pth"
 REGION = "frh04"                                    # BreizhCrops region code used
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,6 +25,17 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ============================================
 TARGET_SEQ_LEN = 45   # must match training: shorter sequences are zero-padded,
                        # longer ones truncated to this length before normalization
+
+# ============================================
+# Input bands — verified against the checkpoint itself (input_projection weight
+# shape is (64, 13)), which matches BreizhCrops' Sentinel-2 L1C band layout.
+# Order matters: it must match the column order the model was trained on.
+# ============================================
+INPUT_DIM = 13
+SENTINEL2_L1C_BANDS = [
+    "B1", "B2", "B3", "B4", "B5", "B6", "B7",
+    "B8", "B8A", "B9", "B10", "B11", "B12",
+]
 
 # ============================================
 # Class index -> name mapping
