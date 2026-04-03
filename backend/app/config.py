@@ -37,6 +37,20 @@ SENTINEL2_L1C_BANDS = [
     "B8", "B8A", "B9", "B10", "B11", "B12",
 ]
 
+# Planetary Computer only serves L2A, not L1C — verified against its live STAC
+# catalog (no "sentinel-2-l1c" collection exists there). L2A drops B10 entirely
+# (it's the cirrus band, meaningless post-atmospheric-correction) and every
+# other band is surface reflectance rather than the top-of-atmosphere values
+# this checkpoint was trained on. B10 is zero-filled below; there is currently
+# no correct source for it through this pipeline. Treat predictions from the
+# AOI-fetch path as provisional until this points at a real L1C source.
+SENTINEL2_L2A_ASSET_KEYS = {
+    "B1": "B01", "B2": "B02", "B3": "B03", "B4": "B04", "B5": "B05",
+    "B6": "B06", "B7": "B07", "B8": "B08", "B8A": "B8A", "B9": "B09",
+    "B10": None,
+    "B11": "B11", "B12": "B12",
+}
+
 # ============================================
 # Class index -> name mapping
 # Source of truth: classmapping.csv shipped with the breizhcrops package.
