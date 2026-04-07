@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.config import CHECKPOINT_PATH, DEVICE, INPUT_DIM, MODEL_PARAMS, NUM_CLASSES
 from app.models.architecture import load_model
+from app.routers.predict import router as predict_router
 
 
 @asynccontextmanager
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Crop Classifier API", lifespan=lifespan)
+app.include_router(predict_router)
 
 
 @app.get("/health")
