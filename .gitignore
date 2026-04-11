@@ -1,4 +1,8 @@
 CLAUDE.md
+progress.md
+
+# Locally-downloaded reference datasets (large, reproducible via the breizhcrops package)
+backend/breizhcrops_dataset/
 
 # Python
 __pycache__/
