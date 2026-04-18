@@ -7,9 +7,13 @@ classmapping.csv from the breizhcrops package — a mismatch here silently
 scrambles ground-truth/prediction labels.
 """
 
+import os
 from pathlib import Path
 
 import torch
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # ============================================
 # Paths / device
@@ -37,19 +41,18 @@ SENTINEL2_L1C_BANDS = [
     "B8", "B8A", "B9", "B10", "B11", "B12",
 ]
 
-# Planetary Computer only serves L2A, not L1C — verified against its live STAC
-# catalog (no "sentinel-2-l1c" collection exists there). L2A drops B10 entirely
-# (it's the cirrus band, meaningless post-atmospheric-correction) and every
-# other band is surface reflectance rather than the top-of-atmosphere values
-# this checkpoint was trained on. B10 is zero-filled below; there is currently
-# no correct source for it through this pipeline. Treat predictions from the
-# AOI-fetch path as provisional until this points at a real L1C source.
-SENTINEL2_L2A_ASSET_KEYS = {
-    "B1": "B01", "B2": "B02", "B3": "B03", "B4": "B04", "B5": "B05",
-    "B6": "B06", "B7": "B07", "B8": "B08", "B8A": "B8A", "B9": "B09",
-    "B10": None,
-    "B11": "B11", "B12": "B12",
-}
+# ============================================
+# Copernicus Data Space Ecosystem — Sentinel Hub Statistical API credentials.
+# Register an OAuth client at the Sentinel Hub Dashboard (dataspace.copernicus.eu
+# -> User Settings -> OAuth clients) and put the values in backend/.env
+# (gitignored). This is what lets sentinel_fetch.py pull true Sentinel-2 L1C
+# data server-side, rather than the L2A-with-zero-filled-B10 workaround this
+# pipeline previously used against Planetary Computer.
+# ============================================
+CDSE_SH_CLIENT_ID = os.environ.get("CDSE_SH_CLIENT_ID")
+CDSE_SH_CLIENT_SECRET = os.environ.get("CDSE_SH_CLIENT_SECRET")
+CDSE_SH_BASE_URL = "https://sh.dataspace.copernicus.eu"
+CDSE_SH_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 
 # ============================================
 # Class index -> name mapping
