@@ -14,28 +14,26 @@ from app.config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
 
 def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
     """
-    Pad/truncate a raw time series to a fixed length and per-feature
-    z-normalize it. Must match the exact steps used during training.
+    Resample a time series to a fixed length, matching BreizhCrops' own
+    training-time transform exactly (breizhcrops.datasets.breizhcrops.
+    get_default_transform): sample `target_seq_len` observations — with
+    replacement if there are fewer available, without replacement if there
+    are more — then sort back into chronological order. No zero-padding, and
+    no separate normalization step here: the model's own LayerNorm (in
+    input_projection) normalizes the projected features; x_raw is expected to
+    already be in reflectance units (sentinel_fetch applies the 1e-4 DN scale)
+    and already in SENTINEL2_L1C_BANDS column order.
 
-    x_raw: numpy array or torch tensor, shape (seq_len, num_features)
+    x_raw: numpy array or torch tensor, shape (seq_len, num_features), seq_len >= 1
     Returns: numpy array, shape (target_seq_len, num_features)
     """
     if torch.is_tensor(x_raw):
         x_raw = x_raw.numpy()
 
     seq_len = x_raw.shape[0]
-    if seq_len < target_seq_len:
-        pad_len = target_seq_len - seq_len
-        x_padded = np.pad(
-            x_raw, ((0, pad_len), (0, 0)), mode="constant", constant_values=0
-        )
-    else:
-        x_padded = x_raw[:target_seq_len]
-
-    mean = x_padded.mean(axis=0)
-    std = x_padded.std(axis=0)
-    std[std == 0] = 1.0  # avoid divide-by-zero on constant features
-    return (x_padded - mean) / std
+    idxs = np.random.choice(seq_len, target_seq_len, replace=seq_len < target_seq_len)
+    idxs.sort()
+    return x_raw[idxs]
 
 
 def predict(model, x_raw, device=DEVICE, class_names=CLASS_NAMES):
@@ -50,8 +48,8 @@ def predict(model, x_raw, device=DEVICE, class_names=CLASS_NAMES):
             "probs": {label: prob, ...}   # full distribution, for debugging/UI
         }
     """
-    x_norm = preprocess_sequence(x_raw)
-    input_tensor = torch.tensor(x_norm, dtype=torch.float32).unsqueeze(0).to(device)
+    x_resampled = preprocess_sequence(x_raw)
+    input_tensor = torch.tensor(x_resampled, dtype=torch.float32).unsqueeze(0).to(device)
 
     with torch.no_grad():
         logits = model(input_tensor)

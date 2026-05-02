@@ -27,8 +27,11 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ============================================
 # Sequence preprocessing
 # ============================================
-TARGET_SEQ_LEN = 45   # must match training: shorter sequences are zero-padded,
-                       # longer ones truncated to this length before normalization
+TARGET_SEQ_LEN = 45   # must match training: sequences are resampled (with
+                       # replacement if shorter, without if longer) to this
+                       # length, then sorted back into chronological order —
+                       # see breizhcrops.datasets.breizhcrops.get_default_transform.
+                       # There is no zero-padding at any point in training.
 
 # ============================================
 # Input bands — verified against breizhcrops.datasets.breizhcrops.get_default_transform
