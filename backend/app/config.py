@@ -31,14 +31,16 @@ TARGET_SEQ_LEN = 45   # must match training: shorter sequences are zero-padded,
                        # longer ones truncated to this length before normalization
 
 # ============================================
-# Input bands — verified against the checkpoint itself (input_projection weight
-# shape is (64, 13)), which matches BreizhCrops' Sentinel-2 L1C band layout.
-# Order matters: it must match the column order the model was trained on.
+# Input bands — verified against breizhcrops.datasets.breizhcrops.get_default_transform
+# (installed package source), NOT natural/numeric order. This is a lexicographic
+# ("B10" < "B2" as strings) artifact of BreizhCrops' own band list, but the
+# checkpoint trained on exactly this column order, so it must be reproduced
+# exactly here even though it looks wrong at a glance.
 # ============================================
 INPUT_DIM = 13
 SENTINEL2_L1C_BANDS = [
-    "B1", "B2", "B3", "B4", "B5", "B6", "B7",
-    "B8", "B8A", "B9", "B10", "B11", "B12",
+    "B1", "B10", "B11", "B12", "B2", "B3", "B4",
+    "B5", "B6", "B7", "B8", "B8A", "B9",
 ]
 
 # ============================================
