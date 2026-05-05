@@ -14,17 +14,22 @@ from app.config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
 
 def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
     """
-    Resample a time series to a fixed length, matching BreizhCrops' own
-    training-time transform exactly (breizhcrops.datasets.breizhcrops.
-    get_default_transform): sample `target_seq_len` observations — with
-    replacement if there are fewer available, without replacement if there
-    are more — then sort back into chronological order. No zero-padding, and
-    no separate normalization step here: the model's own LayerNorm (in
-    input_projection) normalizes the projected features; x_raw is expected to
-    already be in reflectance units (sentinel_fetch applies the 1e-4 DN scale)
-    and already in SENTINEL2_L1C_BANDS column order.
+    Two steps, both verified against the actual training notebook (not just
+    the breizhcrops package defaults):
 
-    x_raw: numpy array or torch tensor, shape (seq_len, num_features), seq_len >= 1
+    1. Resample to `target_seq_len` observations — with replacement if fewer
+       are available, without replacement if more — then sort back into
+       chronological order. This mirrors breizhcrops' own get_default_transform,
+       which every dataset[i] call goes through at training time.
+    2. Per-sample z-score normalize (mean/std across the time axis, per band),
+       computed on the already-resampled array. The training notebook applies
+       this on top of get_default_transform's output before feeding the model
+       — it is a real, separate step, not something the model's internal
+       LayerNorm substitutes for.
+
+    x_raw: numpy array or torch tensor, shape (seq_len, num_features), seq_len >= 1,
+    already in reflectance units (sentinel_fetch applies the 1e-4 DN scale) and
+    already in SENTINEL2_L1C_BANDS column order.
     Returns: numpy array, shape (target_seq_len, num_features)
     """
     if torch.is_tensor(x_raw):
@@ -33,7 +38,12 @@ def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
     seq_len = x_raw.shape[0]
     idxs = np.random.choice(seq_len, target_seq_len, replace=seq_len < target_seq_len)
     idxs.sort()
-    return x_raw[idxs]
+    x_resampled = x_raw[idxs]
+
+    mean = x_resampled.mean(axis=0)
+    std = x_resampled.std(axis=0)
+    std[std == 0] = 1.0  # avoid divide-by-zero on constant features
+    return (x_resampled - mean) / std
 
 
 def predict(model, x_raw, device=DEVICE, class_names=CLASS_NAMES):
