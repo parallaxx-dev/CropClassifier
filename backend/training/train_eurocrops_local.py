@@ -172,17 +172,53 @@ class ImprovedTimeSeriesTransformer(nn.Module):
 # ============================================
 # Step 1: download + load EuroCrops France, bounded memory throughout
 # ============================================
+def _download_with_resume(url, dest_path, max_retries=6):
+    """Stream-download url to dest_path, resuming from a partial file via HTTP
+    Range requests and retrying transient connection drops. Empirically not
+    optional: a ~2.6GB download over a long-lived connection dropped mid-stream
+    in testing, and without this a re-run would silently try to unzip the
+    corrupt partial file instead of resuming."""
+    for attempt in range(1, max_retries + 1):
+        existing_size = dest_path.stat().st_size if dest_path.exists() else 0
+        headers = {"Range": f"bytes={existing_size}-"} if existing_size else {}
+        try:
+            with requests.get(url, stream=True, headers=headers, timeout=60) as resp:
+                if existing_size and resp.status_code == 416:
+                    # Range Not Satisfiable - the range we asked for starts exactly
+                    # at EOF, i.e. the file we already have is already complete
+                    return
+                if existing_size and resp.status_code == 200:
+                    # server ignored our Range request - it doesn't support resume,
+                    # so start this attempt over from scratch
+                    existing_size = 0
+                resp.raise_for_status()
+                mode = "ab" if existing_size and resp.status_code == 206 else "wb"
+                with open(dest_path, mode) as out:
+                    for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                        out.write(chunk)
+                content_length = resp.headers.get("Content-Length")
+
+            if content_length is not None:
+                expected_size = existing_size + int(content_length) if mode == "ab" else int(content_length)
+                actual_size = dest_path.stat().st_size
+                if actual_size < expected_size:
+                    raise IOError(f"download incomplete: got {actual_size} bytes, expected {expected_size}")
+            return
+        except Exception as e:
+            print(f"download attempt {attempt}/{max_retries} failed: {e}")
+            if attempt == max_retries:
+                raise
+            wait = min(30, 2**attempt)
+            print(f"retrying in {wait}s...")
+            time.sleep(wait)
+
+
 def download_and_sample_parcels():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if not EUROCROPS_LOCAL_DIR.exists():
-        if not ZIP_LOCAL_PATH.exists():
-            print("Downloading EuroCrops FR_2018.zip (~2.6GB)...")
-            with requests.get(EUROCROPS_ZIP_URL, stream=True) as resp:
-                resp.raise_for_status()
-                with open(ZIP_LOCAL_PATH, "wb") as out:
-                    for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                        out.write(chunk)
+        print("Downloading EuroCrops FR_2018.zip (~2.6GB)...")
+        _download_with_resume(EUROCROPS_ZIP_URL, ZIP_LOCAL_PATH)
         print("Extracting...")
         with zipfile.ZipFile(ZIP_LOCAL_PATH) as zf:
             zf.extractall(EUROCROPS_LOCAL_DIR)
