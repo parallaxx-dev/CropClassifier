@@ -172,7 +172,7 @@ class ImprovedTimeSeriesTransformer(nn.Module):
 # ============================================
 # Step 1: download + load EuroCrops France, bounded memory throughout
 # ============================================
-def _download_with_resume(url, dest_path, max_retries=6):
+def _download_with_resume(url, dest_path, max_retries=12):
     """Stream-download url to dest_path, resuming from a partial file via HTTP
     Range requests and retrying transient connection drops. Empirically not
     optional: a ~2.6GB download over a long-lived connection dropped mid-stream
@@ -208,7 +208,7 @@ def _download_with_resume(url, dest_path, max_retries=6):
             print(f"download attempt {attempt}/{max_retries} failed: {e}")
             if attempt == max_retries:
                 raise
-            wait = min(30, 2**attempt)
+            wait = min(60, 2**attempt)
             print(f"retrying in {wait}s...")
             time.sleep(wait)
 
