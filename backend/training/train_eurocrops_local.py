@@ -78,9 +78,10 @@ ZIP_LOCAL_PATH = OUTPUT_DIR / "FR_2018.zip"
 CHECKPOINT_PATH = OUTPUT_DIR / "eurocrops_fetch_progress.pkl"
 SAVE_PATH = OUTPUT_DIR / "best_transformer_eurocrops.pth"
 
-N_PER_CLASS = 300  # stratified sample size per class - tune based on time/PU budget.
-                    # Recommended: do a first pass with N_PER_CLASS = 20-30 to confirm
-                    # the whole pipeline runs end to end before committing to a long run.
+N_PER_CLASS = int(os.environ.get("N_PER_CLASS", 300))  # stratified sample size per class -
+                    # tune based on time/PU budget. Recommended: do a first pass with
+                    # N_PER_CLASS=20-30 (env var override) to confirm the whole pipeline
+                    # runs end to end before committing to a long full run.
 TARGET_SEQ_LEN = 45  # must match the deployed model's expectation exactly
 MAX_CLOUD_COVER_PERCENT = 60
 REFLECTANCE_SCALE = 1e-4
