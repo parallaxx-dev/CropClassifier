@@ -33,19 +33,16 @@ RESOLUTION_METERS = 10
 # two without disturbing SENTINEL2_L1C_BANDS, which is also our output column
 # order and must keep matching the checkpoint exactly.
 #
-# B2/B10 are intentionally cross-wired: verified directly (comparing raw h5
-# values against a live CDSE fetch for the same real parcel/date, band by
-# band) that BreizhCrops' own stored "B2" column holds cirrus-band-shaped
-# values (near-zero on nearly every date, spiking only on thin-cirrus days)
-# while its "B10" column holds normal blue-band-range values — i.e. B2 and
-# B10 are swapped in BreizhCrops' own data, not in our fetch. The model
-# trained on whatever numbers actually occupied each column, so matching
-# training means reproducing that swap here, not "correcting" it to true
-# physical band identity.
+# Plain 1:1 mapping, no cross-wiring. The B2/B10 swap previously here existed
+# only to match a quirk in BreizhCrops' own stored data (best_transformer_breizh.pth).
+# The current checkpoint (best_transformer_eurocrops.pth) was trained on real,
+# correctly-labeled bands fetched through this same pipeline, so reproducing
+# that swap here would reintroduce the exact class of bug it existed to work
+# around — feeding the model bands it never saw during training.
 _SH_BAND_NAMES = {
-    "B1": "B01", "B2": "B10", "B3": "B03", "B4": "B04", "B5": "B05",
+    "B1": "B01", "B2": "B02", "B3": "B03", "B4": "B04", "B5": "B05",
     "B6": "B06", "B7": "B07", "B8": "B08", "B8A": "B8A", "B9": "B09",
-    "B10": "B02", "B11": "B11", "B12": "B12",
+    "B10": "B10", "B11": "B11", "B12": "B12",
 }
 _sh_bands = [_SH_BAND_NAMES[b] for b in SENTINEL2_L1C_BANDS]
 

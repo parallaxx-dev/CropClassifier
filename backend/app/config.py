@@ -20,7 +20,13 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 # ============================================
 # Resolved relative to this file, not the process's cwd, so it works the same
 # whether uvicorn is launched from backend/ or anywhere else.
-CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_breizh.pth"
+#
+# Trained on EuroCrops (France, 2018 labels) with imagery fetched live through
+# the same CDSE pipeline used at inference time, instead of BreizhCrops' frozen
+# pre-extracted archive — see backend/training/ for the retraining pipeline and
+# why: BreizhCrops' archive was calibrated under an old, no-longer-served
+# Sentinel-2 processing baseline, causing a confirmed train/inference mismatch.
+CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_eurocrops.pth"
 REGION = "frh04"                                    # BreizhCrops region code used
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
