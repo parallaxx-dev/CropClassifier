@@ -278,11 +278,16 @@ def download_and_sample_parcels():
 
     gdf_labeled = gdf_labeled.to_crs(epsg=4326)
 
-    sampled = (
-        gdf_labeled.groupby("classname", group_keys=False)
-        .apply(lambda g: g.sample(n=min(N_PER_CLASS, len(g)), random_state=42))
-        .reset_index(drop=True)
-    )
+    # Plain loop instead of groupby().apply(lambda g: g.sample(...)): that pattern
+    # relies on pandas retaining the grouping column in the result, which is exactly
+    # the behavior pandas' own DeprecationWarning says is going away - and in some
+    # already-current pandas versions, it's already gone, breaking the very next
+    # line (sampled["classname"]) with a hard KeyError instead of just a warning.
+    sample_parts = []
+    for cls_name, group in gdf_labeled.groupby("classname"):
+        n = min(N_PER_CLASS, len(group))
+        sample_parts.append(group.sample(n=n, random_state=42))
+    sampled = gpd.GeoDataFrame(pd.concat(sample_parts, ignore_index=True), crs=gdf_labeled.crs)
     print("sampled parcels:", len(sampled))
     print(sampled["classname"].value_counts())
 
