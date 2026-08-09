@@ -7,6 +7,9 @@ backend/breizhcrops_dataset/
 # Local training run output (EuroCrops download, fetch checkpoints, trained models)
 backend/training/eurocrops_output/
 
+# Runtime logs
+*.log
+
 # Python
 __pycache__/
 *.pyc
