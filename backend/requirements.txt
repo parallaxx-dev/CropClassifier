@@ -1,0 +1,33 @@
+# ============================================
+# BreizhCrops Crop Classification - Requirements
+# ============================================
+
+# Core ML / data
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# BreizhCrops dataset package (time series + parcel geometries)
+breizhcrops>=0.0.3.4
+
+# Geospatial handling (parcel polygons, CRS reprojection)
+geopandas>=0.13.0
+shapely>=2.0.0
+
+# Basemap / satellite tile fetching for visualization
+contextily>=1.3.0
+
+# Plotting
+matplotlib>=3.7.0
+
+# ============================================
+# Notes for deployment:
+# - geopandas can be tricky to install outside Colab (GDAL dependency).
+#   If pip install fails, try: conda install -c conda-forge geopandas
+# - contextily fetches basemap tiles live from Esri's servers (free/anonymous
+#   endpoint) - can rate-limit under load. For production, consider a paid
+#   tile provider (Mapbox/Esri/Google) with an API key instead.
+# - PyTorch: install the CUDA-matched build from https://pytorch.org/get-started/locally/
+#   if deploying with GPU inference; the line above installs CPU-only by default
+#   via plain pip on most systems.
+# ============================================
