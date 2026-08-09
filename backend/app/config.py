@@ -1,9 +1,9 @@
 """
-config.py — Shared configuration for BreizhCrops crop classification.
+config.py — Shared configuration for EuroCrops multi-country crop classification.
 
 Everything here must match what was used during TRAINING (class index order,
 sequence length, model dims). Do not hand-edit CLASS_NAMES without checking
-classmapping.csv from the breizhcrops package — a mismatch here silently
+backend/training/eurocrops_pipeline/taxonomy.py — a mismatch here silently
 scrambles ground-truth/prediction labels.
 """
 
@@ -21,12 +21,17 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 # Resolved relative to this file, not the process's cwd, so it works the same
 # whether uvicorn is launched from backend/ or anywhere else.
 #
-# Trained on EuroCrops (France, 2018 labels) with imagery fetched live through
-# the same CDSE pipeline used at inference time, instead of BreizhCrops' frozen
-# pre-extracted archive — see backend/training/ for the retraining pipeline and
-# why: BreizhCrops' archive was calibrated under an old, no-longer-served
-# Sentinel-2 processing baseline, causing a confirmed train/inference mismatch.
-CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_eurocrops.pth"
+# Trained on EuroCrops multi-country + AgriFieldNet India data (see
+# backend/training/eurocrops_pipeline/) with imagery fetched live through the
+# same CDSE pipeline used at inference time.
+# IMPORTANT (2026-08-10): this checkpoint was trained on a PARTIAL fetch —
+# Austria (complete, 1650 parcels) + Belgium-Flanders (complete, 1464 parcels)
+# + Germany-Brandenburg (partial) + India/AgriFieldNet (complete, 1009
+# parcels) were available when training ran; 15 of 18 EuroCrops countries
+# had not been fetched yet. Retrain and repoint this path as more countries
+# land (backend/training/eurocrops_pipeline/run_fetch.py) — see progress.md
+# for the fetch's live status and the full validation breakdown.
+CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_multicountry.pth"
 REGION = "frh04"                                    # BreizhCrops region code used
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -76,21 +81,31 @@ CDSE_SH_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/p
 
 # ============================================
 # Class index -> name mapping
-# Source of truth: classmapping.csv shipped with the breizhcrops package.
-# Verify with:
-#   import pandas as pd
-#   pd.read_csv("breizhcrops_dataset/classmapping.csv")
+# Source of truth: backend/training/eurocrops_pipeline/taxonomy.py's CLASS_NAMES
+# (HCAT3-derived, harmonized across EuroCrops countries). Do NOT hand-edit
+# without also checking that file — index order must match the checkpoint
+# exactly (it is the model's output layer order).
 # ============================================
 CLASS_NAMES = {
-    0: "barley",
+    0: "meadow",
     1: "wheat",
-    2: "rapeseed",
-    3: "corn",
-    4: "sunflower",
-    5: "orchards",
-    6: "nuts",
-    7: "permanent meadows",
-    8: "temporary meadows",
+    2: "barley",
+    3: "triticale",
+    4: "rapeseed",
+    5: "maize",
+    6: "sunflower",
+    7: "vineyards",
+    8: "fruit",
+    9: "nuts",
+    10: "potatoes",
+    # AgriFieldNet India additions (backend/training/eurocrops_pipeline/taxonomy.py)
+    11: "mustard",
+    12: "sugarcane",
+    13: "lentil",
+    14: "rice",
+    15: "gram",
+    16: "garlic",
+    17: "fallow",
 }
 
 NUM_CLASSES = len(CLASS_NAMES)
@@ -100,15 +115,24 @@ NUM_CLASSES = len(CLASS_NAMES)
 # keep consistent so the same crop always renders the same color)
 # ============================================
 CLASS_COLORS = {
-    "barley": "#e74c3c",
-    "wheat": "#3498db",
-    "rapeseed": "#2ecc71",
-    "corn": "#9b59b6",
-    "sunflower": "#f39c12",
-    "orchards": "#16a085",
-    "nuts": "#8e44ad",
-    "permanent meadows": "#f1c40f",
-    "temporary meadows": "#1abc9c",
+    "meadow": "#8dd3c7",
+    "wheat": "#ffed6f",
+    "barley": "#fdb462",
+    "triticale": "#d9a066",
+    "rapeseed": "#f4d442",
+    "maize": "#fb8072",
+    "sunflower": "#f4a300",
+    "vineyards": "#80b1d3",
+    "fruit": "#b3de69",
+    "nuts": "#bebada",
+    "potatoes": "#bc80bd",
+    "mustard": "#ffdd55",
+    "sugarcane": "#66c266",
+    "lentil": "#c49a6c",
+    "rice": "#9ecae1",
+    "gram": "#d9b382",
+    "garlic": "#f2f2d0",
+    "fallow": "#a9a9a9",
 }
 DEFAULT_COLOR = "#7f8c8d"  # fallback grey for unmatched/unknown class names
 
