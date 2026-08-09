@@ -23,7 +23,10 @@ from app.config import (
     SENTINEL2_L1C_BANDS,
 )
 
-MAX_CLOUD_COVER_PERCENT = 60
+MAX_CLOUD_COVER_PERCENT = 60  # cheap whole-tile catalog pre-filter, kept as a first pass
+MIN_AOI_CLEAR_FRACTION = 0.4  # below this, a day's AOI-specific cloud cover is too high
+                               # to trust even though *some* clear pixels exist — skip the
+                               # whole day rather than average over an unrepresentative sliver
 REFLECTANCE_SCALE = 1e-4  # Sentinel-2 stores digital numbers; x1e-4 -> 0-1 reflectance
 RESOLUTION_METERS = 10
 
@@ -46,23 +49,41 @@ _SH_BAND_NAMES = {
 }
 _sh_bands = [_SH_BAND_NAMES[b] for b in SENTINEL2_L1C_BANDS]
 
+# Cloud masking: "CLM" is Sentinel Hub's precomputed s2cloudless binary cloud mask
+# (0 clear / 1 cloud / 255 no-data), available for L1C directly — no L2A/SCL needed.
+# It's generated at 160m resolution and upsampled to match our 10m request, so cloud
+# edges are blocky rather than pixel-precise, but it's real per-pixel cloud exclusion
+# where previously there was none (only a whole-tile catalog filter). This masks
+# CLOUDS only, not cloud SHADOWS — true SCL-based shadow classes don't exist for L1C;
+# shadow masking is a still-open gap, not solved by this.
+#
+# Trick to get both a cloud-corrected band mean AND an AOI-specific cloud fraction out
+# of a single Statistical API request (each extra request costs against the CDSE rate
+# budget): "dataMask" stays footprint-only (unchanged), so its own stats give the total
+# in-footprint pixel count. "clear_bands" zeroes out cloudy pixels; "clear_frac" reports
+# 1/0 per pixel for clear/cloudy. Both are averaged over the SAME footprint-only-masked
+# denominator, so True clear-sky band mean = clear_bands.mean / clear_frac.mean (as long
+# as clear_frac.mean isn't ~0 — checked in Python below before dividing).
 _EVALSCRIPT = f"""
 //VERSION=3
 function setup() {{
   return {{
     input: [{{
-      bands: {json.dumps(_sh_bands + ["dataMask"])},
+      bands: {json.dumps(_sh_bands + ["CLM", "dataMask"])},
       units: "DN"
     }}],
     output: [
-      {{ id: "bands", bands: {len(SENTINEL2_L1C_BANDS)}, sampleType: "INT16" }},
+      {{ id: "clear_bands", bands: {len(SENTINEL2_L1C_BANDS)}, sampleType: "INT16" }},
+      {{ id: "clear_frac", bands: 1, sampleType: "FLOAT32" }},
       {{ id: "dataMask", bands: 1 }}
     ]
   }};
 }}
 function evaluatePixel(sample) {{
+  var isClear = (sample.CLM === 0) ? 1 : 0;
   return {{
-    bands: [{", ".join(f"sample.{b}" for b in _sh_bands)}],
+    clear_bands: [{", ".join(f"sample.{b} * isClear" for b in _sh_bands)}],
+    clear_frac: [isClear],
     dataMask: [sample.dataMask]
   }};
 }}
@@ -147,15 +168,23 @@ def fetch_time_series(
 
 
 def _extract_band_means(interval: dict) -> list[float] | None:
-    """One row for one day's scene: mean in-AOI reflectance per band, in
-    SENTINEL2_L1C_BANDS order. Returns None if every pixel in the AOI was
-    outside the scene's data footprint (dataMask all zero)."""
-    bands = interval["outputs"]["bands"]["bands"]
-    first_stat = bands["B0"]["stats"]
-    if first_stat["sampleCount"] == 0 or first_stat["noDataCount"] >= first_stat["sampleCount"]:
+    """One row for one day's scene: mean in-AOI *clear-sky* reflectance per
+    band, in SENTINEL2_L1C_BANDS order. Returns None if every pixel in the
+    AOI was outside the scene's data footprint (dataMask all zero), or if
+    fewer than MIN_AOI_CLEAR_FRACTION of the in-footprint pixels are cloud-free
+    (the day is kept/dropped as a whole, not partially averaged over a small
+    unrepresentative clear sliver)."""
+    outputs = interval["outputs"]
+    footprint_stat = outputs["clear_frac"]["bands"]["B0"]["stats"]
+    if footprint_stat["sampleCount"] == 0 or footprint_stat["noDataCount"] >= footprint_stat["sampleCount"]:
         return None
 
+    clear_fraction = footprint_stat["mean"]
+    if clear_fraction < MIN_AOI_CLEAR_FRACTION:
+        return None
+
+    bands = outputs["clear_bands"]["bands"]
     return [
-        bands[f"B{i}"]["stats"]["mean"] * REFLECTANCE_SCALE
+        (bands[f"B{i}"]["stats"]["mean"] / clear_fraction) * REFLECTANCE_SCALE
         for i in range(len(SENTINEL2_L1C_BANDS))
     ]

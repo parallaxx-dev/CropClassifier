@@ -87,6 +87,9 @@ MAX_CLOUD_COVER_PERCENT = 60
 REFLECTANCE_SCALE = 1e-4
 RESOLUTION_METERS = 10
 FETCH_SLEEP_SECONDS = 0.3  # stay comfortably under CDSE's 300 req/min cap
+MIN_AOI_CLEAR_FRACTION = 0.4  # must match backend/app/services/sentinel_fetch.py exactly —
+                    # a train/inference fetch-logic mismatch silently degrades accuracy
+                    # just as much as a band-order or normalization mismatch would.
 
 # Exact band order the deployed model expects (verified against breizhcrops' own
 # get_default_transform - lexicographic, not natural numeric order). No B2/B10 swap
@@ -317,23 +320,30 @@ def _utm_epsg_for(lon, lat):
     return (32600 if lat >= 0 else 32700) + zone
 
 
+# Cloud masking (must exactly mirror backend/app/services/sentinel_fetch.py — see the
+# comment there for the full explanation of the CLM band and the clear_bands/clear_frac
+# division trick). CLM detects clouds only, not shadows; SCL-based shadow classes don't
+# exist for true L1C.
 _EVALSCRIPT = f"""
 //VERSION=3
 function setup() {{
   return {{
     input: [{{
-      bands: {json.dumps(_sh_bands + ["dataMask"])},
+      bands: {json.dumps(_sh_bands + ["CLM", "dataMask"])},
       units: "DN"
     }}],
     output: [
-      {{ id: "bands", bands: {len(SENTINEL2_L1C_BANDS)}, sampleType: "INT16" }},
+      {{ id: "clear_bands", bands: {len(SENTINEL2_L1C_BANDS)}, sampleType: "INT16" }},
+      {{ id: "clear_frac", bands: 1, sampleType: "FLOAT32" }},
       {{ id: "dataMask", bands: 1 }}
     ]
   }};
 }}
 function evaluatePixel(sample) {{
+  var isClear = (sample.CLM === 0) ? 1 : 0;
   return {{
-    bands: [{", ".join(f"sample.{b}" for b in _sh_bands)}],
+    clear_bands: [{", ".join(f"sample.{b} * isClear" for b in _sh_bands)}],
+    clear_frac: [isClear],
     dataMask: [sample.dataMask]
   }};
 }}
@@ -360,11 +370,18 @@ def fetch_time_series(polygon, start_date, end_date, config, data_collection):
 
     rows = []
     for interval in result.get("data", []):
-        bandsout = interval["outputs"]["bands"]["bands"]
-        first = bandsout["B0"]["stats"]
-        if first["sampleCount"] == 0 or first["noDataCount"] >= first["sampleCount"]:
+        outputs = interval["outputs"]
+        footprint = outputs["clear_frac"]["bands"]["B0"]["stats"]
+        if footprint["sampleCount"] == 0 or footprint["noDataCount"] >= footprint["sampleCount"]:
             continue
-        rows.append([bandsout[f"B{i}"]["stats"]["mean"] * REFLECTANCE_SCALE for i in range(len(SENTINEL2_L1C_BANDS))])
+        clear_fraction = footprint["mean"]
+        if clear_fraction < MIN_AOI_CLEAR_FRACTION:
+            continue
+        bandsout = outputs["clear_bands"]["bands"]
+        rows.append([
+            (bandsout[f"B{i}"]["stats"]["mean"] / clear_fraction) * REFLECTANCE_SCALE
+            for i in range(len(SENTINEL2_L1C_BANDS))
+        ])
     return np.array(rows, dtype=np.float32)
 
 
