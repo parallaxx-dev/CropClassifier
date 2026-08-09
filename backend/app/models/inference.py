@@ -9,53 +9,74 @@ series in, (predicted_class_name, confidence, all_class_probs) out.
 import numpy as np
 import torch
 
-from config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
+from app.config import CLASS_NAMES, INFERENCE_ENSEMBLE_SIZE, TARGET_SEQ_LEN, DEVICE
 
 
 def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
     """
-    Pad/truncate a raw time series to a fixed length and per-feature
-    z-normalize it. Must match the exact steps used during training.
+    Two steps, both verified against the actual training notebook (not just
+    the breizhcrops package defaults):
 
-    x_raw: numpy array or torch tensor, shape (seq_len, num_features)
+    1. Resample to `target_seq_len` observations — with replacement if fewer
+       are available, without replacement if more — then sort back into
+       chronological order. This mirrors breizhcrops' own get_default_transform,
+       which every dataset[i] call goes through at training time.
+    2. Per-sample z-score normalize (mean/std across the time axis, per band),
+       computed on the already-resampled array. The training notebook applies
+       this on top of get_default_transform's output before feeding the model
+       — it is a real, separate step, not something the model's internal
+       LayerNorm substitutes for.
+
+    x_raw: numpy array or torch tensor, shape (seq_len, num_features), seq_len >= 1,
+    already in reflectance units (sentinel_fetch applies the 1e-4 DN scale) and
+    already in SENTINEL2_L1C_BANDS column order.
     Returns: numpy array, shape (target_seq_len, num_features)
     """
     if torch.is_tensor(x_raw):
         x_raw = x_raw.numpy()
 
     seq_len = x_raw.shape[0]
-    if seq_len < target_seq_len:
-        pad_len = target_seq_len - seq_len
-        x_padded = np.pad(
-            x_raw, ((0, pad_len), (0, 0)), mode="constant", constant_values=0
-        )
-    else:
-        x_padded = x_raw[:target_seq_len]
+    idxs = np.random.choice(seq_len, target_seq_len, replace=seq_len < target_seq_len)
+    idxs.sort()
+    x_resampled = x_raw[idxs]
 
-    mean = x_padded.mean(axis=0)
-    std = x_padded.std(axis=0)
+    mean = x_resampled.mean(axis=0)
+    std = x_resampled.std(axis=0)
     std[std == 0] = 1.0  # avoid divide-by-zero on constant features
-    return (x_padded - mean) / std
+    return (x_resampled - mean) / std
 
 
-def predict(model, x_raw, device=DEVICE, class_names=CLASS_NAMES):
+def predict(
+    model,
+    x_raw,
+    device=DEVICE,
+    class_names=CLASS_NAMES,
+    ensemble_size=INFERENCE_ENSEMBLE_SIZE,
+):
     """
     Run inference on one raw parcel time series.
+
+    preprocess_sequence's resampling is random and unseeded (intentional, as
+    training-time augmentation). A single draw at inference is a high-variance
+    point estimate — the same parcel can score as different classes on
+    different calls. To get a stable prediction, draw `ensemble_size`
+    independent resamples, run them through the model as one batch, and
+    average the resulting softmax probabilities before taking argmax.
 
     Returns dict:
         {
             "pred_class_idx": int,
             "pred_label": str,
             "confidence": float,
-            "probs": {label: prob, ...}   # full distribution, for debugging/UI
+            "probs": {label: prob, ...}   # full averaged distribution, for debugging/UI
         }
     """
-    x_norm = preprocess_sequence(x_raw)
-    input_tensor = torch.tensor(x_norm, dtype=torch.float32).unsqueeze(0).to(device)
+    draws = np.stack([preprocess_sequence(x_raw) for _ in range(ensemble_size)])
+    input_tensor = torch.tensor(draws, dtype=torch.float32).to(device)
 
     with torch.no_grad():
         logits = model(input_tensor)
-        probs = torch.softmax(logits, dim=1).squeeze(0)
+        probs = torch.softmax(logits, dim=1).mean(dim=0)
 
     pred_idx = int(torch.argmax(probs).item())
     confidence = float(probs[pred_idx].item())

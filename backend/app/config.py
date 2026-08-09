@@ -1,44 +1,111 @@
 """
-config.py — Shared configuration for BreizhCrops crop classification.
+config.py — Shared configuration for EuroCrops multi-country crop classification.
 
 Everything here must match what was used during TRAINING (class index order,
 sequence length, model dims). Do not hand-edit CLASS_NAMES without checking
-classmapping.csv from the breizhcrops package — a mismatch here silently
+backend/training/eurocrops_pipeline/taxonomy.py — a mismatch here silently
 scrambles ground-truth/prediction labels.
 """
 
+import os
+from pathlib import Path
+
 import torch
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # ============================================
 # Paths / device
 # ============================================
-CHECKPOINT_PATH = "best_transformer_breizh.pth"   # update path for deployment
+# Resolved relative to this file, not the process's cwd, so it works the same
+# whether uvicorn is launched from backend/ or anywhere else.
+#
+# Trained on EuroCrops multi-country + AgriFieldNet India data (see
+# backend/training/eurocrops_pipeline/) with imagery fetched live through the
+# same CDSE pipeline used at inference time.
+# IMPORTANT (2026-08-10): this checkpoint was trained on a PARTIAL fetch —
+# Austria (complete, 1650 parcels) + Belgium-Flanders (complete, 1464 parcels)
+# + Germany-Brandenburg (partial) + India/AgriFieldNet (complete, 1009
+# parcels) were available when training ran; 15 of 18 EuroCrops countries
+# had not been fetched yet. Retrain and repoint this path as more countries
+# land (backend/training/eurocrops_pipeline/run_fetch.py) — see progress.md
+# for the fetch's live status and the full validation breakdown.
+CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_multicountry.pth"
 REGION = "frh04"                                    # BreizhCrops region code used
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ============================================
 # Sequence preprocessing
 # ============================================
-TARGET_SEQ_LEN = 45   # must match training: shorter sequences are zero-padded,
-                       # longer ones truncated to this length before normalization
+TARGET_SEQ_LEN = 45   # must match training: sequences are resampled (with
+                       # replacement if shorter, without if longer) to this
+                       # length, then sorted back into chronological order —
+                       # see breizhcrops.datasets.breizhcrops.get_default_transform.
+                       # There is no zero-padding at any point in training.
+
+INFERENCE_ENSEMBLE_SIZE = 16  # preprocess_sequence's resampling is random with no
+                       # fixed seed (this is correct/intentional as training-time
+                       # augmentation — see breizhcrops get_default_transform). At
+                       # inference a single draw is a high-variance point estimate:
+                       # the same parcel can land on different confident classes on
+                       # different calls. predict() draws this many independent
+                       # resamples and averages their softmax probabilities to get a
+                       # stable prediction instead of trusting one draw.
+
+# ============================================
+# Input bands — verified against breizhcrops.datasets.breizhcrops.get_default_transform
+# (installed package source), NOT natural/numeric order. This is a lexicographic
+# ("B10" < "B2" as strings) artifact of BreizhCrops' own band list, but the
+# checkpoint trained on exactly this column order, so it must be reproduced
+# exactly here even though it looks wrong at a glance.
+# ============================================
+INPUT_DIM = 13
+SENTINEL2_L1C_BANDS = [
+    "B1", "B10", "B11", "B12", "B2", "B3", "B4",
+    "B5", "B6", "B7", "B8", "B8A", "B9",
+]
+
+# ============================================
+# Copernicus Data Space Ecosystem — Sentinel Hub Statistical API credentials.
+# Register an OAuth client at the Sentinel Hub Dashboard (dataspace.copernicus.eu
+# -> User Settings -> OAuth clients) and put the values in backend/.env
+# (gitignored). This is what lets sentinel_fetch.py pull true Sentinel-2 L1C
+# data server-side, rather than the L2A-with-zero-filled-B10 workaround this
+# pipeline previously used against Planetary Computer.
+# ============================================
+CDSE_SH_CLIENT_ID = os.environ.get("CDSE_SH_CLIENT_ID")
+CDSE_SH_CLIENT_SECRET = os.environ.get("CDSE_SH_CLIENT_SECRET")
+CDSE_SH_BASE_URL = "https://sh.dataspace.copernicus.eu"
+CDSE_SH_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 
 # ============================================
 # Class index -> name mapping
-# Source of truth: classmapping.csv shipped with the breizhcrops package.
-# Verify with:
-#   import pandas as pd
-#   pd.read_csv("breizhcrops_dataset/classmapping.csv")
+# Source of truth: backend/training/eurocrops_pipeline/taxonomy.py's CLASS_NAMES
+# (HCAT3-derived, harmonized across EuroCrops countries). Do NOT hand-edit
+# without also checking that file — index order must match the checkpoint
+# exactly (it is the model's output layer order).
 # ============================================
 CLASS_NAMES = {
-    0: "barley",
+    0: "meadow",
     1: "wheat",
-    2: "rapeseed",
-    3: "corn",
-    4: "sunflower",
-    5: "orchards",
-    6: "nuts",
-    7: "permanent meadows",
-    8: "temporary meadows",
+    2: "barley",
+    3: "triticale",
+    4: "rapeseed",
+    5: "maize",
+    6: "sunflower",
+    7: "vineyards",
+    8: "fruit",
+    9: "nuts",
+    10: "potatoes",
+    # AgriFieldNet India additions (backend/training/eurocrops_pipeline/taxonomy.py)
+    11: "mustard",
+    12: "sugarcane",
+    13: "lentil",
+    14: "rice",
+    15: "gram",
+    16: "garlic",
+    17: "fallow",
 }
 
 NUM_CLASSES = len(CLASS_NAMES)
@@ -48,15 +115,24 @@ NUM_CLASSES = len(CLASS_NAMES)
 # keep consistent so the same crop always renders the same color)
 # ============================================
 CLASS_COLORS = {
-    "barley": "#e74c3c",
-    "wheat": "#3498db",
-    "rapeseed": "#2ecc71",
-    "corn": "#9b59b6",
-    "sunflower": "#f39c12",
-    "orchards": "#16a085",
-    "nuts": "#8e44ad",
-    "permanent meadows": "#f1c40f",
-    "temporary meadows": "#1abc9c",
+    "meadow": "#8dd3c7",
+    "wheat": "#ffed6f",
+    "barley": "#fdb462",
+    "triticale": "#d9a066",
+    "rapeseed": "#f4d442",
+    "maize": "#fb8072",
+    "sunflower": "#f4a300",
+    "vineyards": "#80b1d3",
+    "fruit": "#b3de69",
+    "nuts": "#bebada",
+    "potatoes": "#bc80bd",
+    "mustard": "#ffdd55",
+    "sugarcane": "#66c266",
+    "lentil": "#c49a6c",
+    "rice": "#9ecae1",
+    "gram": "#d9b382",
+    "garlic": "#f2f2d0",
+    "fallow": "#a9a9a9",
 }
 DEFAULT_COLOR = "#7f8c8d"  # fallback grey for unmatched/unknown class names
 

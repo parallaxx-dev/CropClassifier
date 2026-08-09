@@ -1,4 +1,14 @@
 CLAUDE.md
+progress.md
+
+# Locally-downloaded reference datasets (large, reproducible via the breizhcrops package)
+backend/breizhcrops_dataset/
+
+# Local training run output (EuroCrops download, fetch checkpoints, trained models)
+backend/training/eurocrops_output/
+
+# Runtime logs
+*.log
 
 # Python
 __pycache__/

@@ -2,6 +2,10 @@
 # BreizhCrops Crop Classification - Requirements
 # ============================================
 
+# API
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
 # Core ML / data
 torch>=2.0.0
 numpy>=1.24.0
@@ -13,6 +17,14 @@ breizhcrops>=0.0.3.4
 # Geospatial handling (parcel polygons, CRS reprojection)
 geopandas>=0.13.0
 shapely>=2.0.0
+
+# Sentinel-2 L1C time series (Copernicus Data Space Ecosystem, Sentinel Hub
+# Statistical API) — server-side per-band zonal statistics, no local raster
+# download/clipping needed.
+sentinelhub>=3.10.0
+
+# Loads CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET from backend/.env (gitignored)
+python-dotenv>=1.0.0
 
 # Basemap / satellite tile fetching for visualization
 contextily>=1.3.0
