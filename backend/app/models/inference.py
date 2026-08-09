@@ -9,7 +9,7 @@ series in, (predicted_class_name, confidence, all_class_probs) out.
 import numpy as np
 import torch
 
-from app.config import CLASS_NAMES, TARGET_SEQ_LEN, DEVICE
+from app.config import CLASS_NAMES, INFERENCE_ENSEMBLE_SIZE, TARGET_SEQ_LEN, DEVICE
 
 
 def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
@@ -46,24 +46,37 @@ def preprocess_sequence(x_raw, target_seq_len=TARGET_SEQ_LEN):
     return (x_resampled - mean) / std
 
 
-def predict(model, x_raw, device=DEVICE, class_names=CLASS_NAMES):
+def predict(
+    model,
+    x_raw,
+    device=DEVICE,
+    class_names=CLASS_NAMES,
+    ensemble_size=INFERENCE_ENSEMBLE_SIZE,
+):
     """
     Run inference on one raw parcel time series.
+
+    preprocess_sequence's resampling is random and unseeded (intentional, as
+    training-time augmentation). A single draw at inference is a high-variance
+    point estimate — the same parcel can score as different classes on
+    different calls. To get a stable prediction, draw `ensemble_size`
+    independent resamples, run them through the model as one batch, and
+    average the resulting softmax probabilities before taking argmax.
 
     Returns dict:
         {
             "pred_class_idx": int,
             "pred_label": str,
             "confidence": float,
-            "probs": {label: prob, ...}   # full distribution, for debugging/UI
+            "probs": {label: prob, ...}   # full averaged distribution, for debugging/UI
         }
     """
-    x_resampled = preprocess_sequence(x_raw)
-    input_tensor = torch.tensor(x_resampled, dtype=torch.float32).unsqueeze(0).to(device)
+    draws = np.stack([preprocess_sequence(x_raw) for _ in range(ensemble_size)])
+    input_tensor = torch.tensor(draws, dtype=torch.float32).to(device)
 
     with torch.no_grad():
         logits = model(input_tensor)
-        probs = torch.softmax(logits, dim=1).squeeze(0)
+        probs = torch.softmax(logits, dim=1).mean(dim=0)
 
     pred_idx = int(torch.argmax(probs).item())
     confidence = float(probs[pred_idx].item())

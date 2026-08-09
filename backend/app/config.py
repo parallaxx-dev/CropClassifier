@@ -39,6 +39,15 @@ TARGET_SEQ_LEN = 45   # must match training: sequences are resampled (with
                        # see breizhcrops.datasets.breizhcrops.get_default_transform.
                        # There is no zero-padding at any point in training.
 
+INFERENCE_ENSEMBLE_SIZE = 16  # preprocess_sequence's resampling is random with no
+                       # fixed seed (this is correct/intentional as training-time
+                       # augmentation — see breizhcrops get_default_transform). At
+                       # inference a single draw is a high-variance point estimate:
+                       # the same parcel can land on different confident classes on
+                       # different calls. predict() draws this many independent
+                       # resamples and averages their softmax probabilities to get a
+                       # stable prediction instead of trusting one draw.
+
 # ============================================
 # Input bands — verified against breizhcrops.datasets.breizhcrops.get_default_transform
 # (installed package source), NOT natural/numeric order. This is a lexicographic
