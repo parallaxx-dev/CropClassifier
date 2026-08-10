@@ -18,6 +18,8 @@ breizhcrops>=0.0.3.4
 # Geospatial handling (parcel polygons, CRS reprojection)
 geopandas>=0.13.0
 shapely>=2.0.0
+pyogrio>=0.7.0  # geopandas' GDAL-backed vector I/O engine (KML/GeoPackage/Shapefile reads)
+rasterio>=1.3.0  # raster (GeoTIFF) footprint extraction, services/aoi_upload.py
 
 # Sentinel-2 L1C time series (Copernicus Data Space Ecosystem, Sentinel Hub
 # Statistical API) — server-side per-band zonal statistics, no local raster
