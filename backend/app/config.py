@@ -21,17 +21,18 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 # Resolved relative to this file, not the process's cwd, so it works the same
 # whether uvicorn is launched from backend/ or anywhere else.
 #
-# Trained on EuroCrops multi-country + AgriFieldNet India data (see
-# backend/training/eurocrops_pipeline/) with imagery fetched live through the
-# same CDSE pipeline used at inference time.
-# IMPORTANT (2026-08-10): this checkpoint was trained on a PARTIAL fetch —
-# Austria (complete, 1650 parcels) + Belgium-Flanders (complete, 1464 parcels)
-# + Germany-Brandenburg (partial) + India/AgriFieldNet (complete, 1009
-# parcels) were available when training ran; 15 of 18 EuroCrops countries
-# had not been fetched yet. Retrain and repoint this path as more countries
-# land (backend/training/eurocrops_pipeline/run_fetch.py) — see progress.md
-# for the fetch's live status and the full validation breakdown.
-CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "best_transformer_multicountry.pth"
+# Trained on EuroCrops multi-country + AgriFieldNet India + hand-labeled
+# CUSTOM data (see backend/training/eurocrops_pipeline/) with imagery
+# fetched live through the same CDSE pipeline used at inference time.
+# As of this retrain (2026-08-10): Austria (1650), Belgium-Flanders (1464),
+# Germany-Brandenburg (1411, now complete), Germany-Lower Saxony (1416),
+# Germany-North Rhine-Westphalia (1313), India/AgriFieldNet (1009), and the
+# 88-parcel hand-labeled CUSTOM region (wheat/mustard near Varanasi, one
+# meadow near Jabalpur — see app/services/custom_parcels.py) all went into
+# training. 12 of 18 EuroCrops countries still remain unfetched — retrain
+# and repoint this path as more land (backend/training/eurocrops_pipeline/
+# run_fetch.py) — see progress.md for the full validation breakdown.
+CHECKPOINT_PATH = Path(__file__).resolve().parent.parent / "multicountry_india_custom_18class.pth"
 REGION = "frh04"                                    # BreizhCrops region code used
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
