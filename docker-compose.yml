@@ -1,0 +1,28 @@
+# Local orchestration mirroring how the two services actually talk to each
+# other in production (built images, not source-mounted dev servers -- use
+# `npm run dev` / `uvicorn --reload` directly on the host for hot-reload
+# dev work, this is for testing the deployable artifact itself).
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "9000:8000"
+    env_file:
+      - backend/.env  # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET (gitignored, not baked into the image)
+    environment:
+      - CORS_ALLOWED_ORIGINS=http://localhost:8080
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: http://localhost:9000/api/v1
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
