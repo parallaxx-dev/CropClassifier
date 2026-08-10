@@ -232,7 +232,7 @@ validates the system end to end.
 
 ## 10. What's deployed and testable right now
 
-- Live API at `http://localhost:8000/api/v1/predict`, running the 18-class
+- Live API at `http://localhost:9000/api/v1/predict`, running the 18-class
   checkpoint trained on Austria + Belgium-Flanders + partial
   Germany-Brandenburg + India.
 - Ready-to-use test requests (real field coordinates with true labels) in
