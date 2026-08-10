@@ -76,7 +76,7 @@ OUTPUT_DIR = Path(__file__).resolve().parent / "eurocrops_output"
 EUROCROPS_LOCAL_DIR = OUTPUT_DIR / "eurocrops_fr_2018"
 ZIP_LOCAL_PATH = OUTPUT_DIR / "FR_2018.zip"
 CHECKPOINT_PATH = OUTPUT_DIR / "eurocrops_fetch_progress.pkl"
-SAVE_PATH = OUTPUT_DIR / "best_transformer_eurocrops.pth"
+SAVE_PATH = OUTPUT_DIR / "eurocrops_france_11class.pth"
 
 N_PER_CLASS = int(os.environ.get("N_PER_CLASS", 300))  # stratified sample size per class -
                     # tune based on time/PU budget. Recommended: do a first pass with

@@ -113,7 +113,7 @@ CDSE_SH_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/p
 WORKING_DIR = Path("/kaggle/working")
 SCRATCH_DIR = Path("/kaggle/tmp/eurocrops_scratch")
 CHECKPOINT_DIR = WORKING_DIR / "checkpoints"
-SAVE_PATH = WORKING_DIR / "best_transformer_multicountry.pth"
+SAVE_PATH = WORKING_DIR / "multicountry_india_18class.pth"
 for d in (SCRATCH_DIR, CHECKPOINT_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
@@ -875,7 +875,7 @@ _report(test_labels, np.array(y_pred_ens), "ensembled")""")
 
 add(MD, """## Next steps after this finishes
 
-- `best_transformer_multicountry.pth` is NOT a drop-in replacement for the currently
+- `multicountry_india_18class.pth` is NOT a drop-in replacement for the currently
   deployed checkpoint — `NUM_CLASSES` changed (11 vs. 9) and the class scheme itself
   changed (e.g. `orchards`/`nuts` -> `fruit`/`nuts` with different membership, new
   classes like `vineyards`/`potatoes`/`triticale`). Deploying this requires updating
