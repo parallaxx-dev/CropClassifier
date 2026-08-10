@@ -93,4 +93,77 @@ MODEL_INFO = {
         "CUSTOM region held-out slice is only 17 parcels -- real signal, not a statistically solid estimate.",
         "live_pipeline numbers below predate this retrain -- not yet re-measured against the current checkpoint.",
     ],
+    "confusion_matrix": {
+        "note": "ensembled (16-draw) predictions on the held-out test set, n=1671 -- rows=true, cols=predicted, "
+                "same run as 'overall'/'per_class' above (training/eurocrops_pipeline/run_train.py --dump-json)",
+        "class_names": [
+            "meadow", "wheat", "barley", "triticale", "rapeseed", "maize", "sunflower", "vineyards",
+            "fruit", "nuts", "potatoes", "mustard", "sugarcane", "lentil", "rice", "gram", "garlic", "fallow",
+        ],
+        "matrix": [
+            [109, 3, 1, 1, 0, 1, 0, 0, 32, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 121, 6, 14, 2, 1, 0, 0, 3, 0, 0, 5, 11, 0, 0, 1, 1, 0],
+            [3, 11, 114, 9, 3, 2, 3, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0],
+            [5, 39, 15, 75, 4, 2, 1, 0, 4, 1, 4, 0, 0, 0, 0, 0, 0, 0],
+            [2, 0, 5, 0, 143, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 170, 3, 0, 2, 1, 2, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 2, 1, 3, 93, 3, 6, 0, 16, 0, 0, 0, 0, 0, 0, 0],
+            [2, 1, 1, 2, 0, 3, 2, 51, 11, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [29, 0, 0, 1, 0, 1, 4, 11, 102, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [14, 1, 2, 4, 0, 2, 3, 3, 24, 25, 0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 3, 2, 4, 1, 5, 15, 1, 4, 1, 117, 0, 0, 0, 0, 0, 0, 1],
+            [0, 13, 0, 0, 0, 1, 0, 0, 0, 0, 0, 14, 6, 0, 0, 0, 0, 2],
+            [0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0],
+            [1, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 12],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 3, 0, 0],
+            [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 0, 4, 0, 0, 16],
+        ],
+    },
+    "band_correlation": {
+        "note": "Pearson correlation across 238,955 real fetched Sentinel-2 observations (all 7 trained "
+                "regions -- AT/BE_VLG/DE_BB/DE_LS/DE_NRW/IN/CUSTOM; DK excluded, still mid-fetch). Bands "
+                "in SENTINEL2_L1C_BANDS order (the model's actual input column order, not numeric order).",
+        "bands": ["B1", "B10", "B11", "B12", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B9"],
+        "matrix": [
+            [1.00, 0.22, -0.27, -0.08, 0.99, 0.97, 0.94, 0.94, 0.73, 0.57, 0.56, 0.51, 0.70],
+            [0.22, 1.00, -0.06, 0.00, 0.22, 0.21, 0.21, 0.21, 0.15, 0.11, 0.12, 0.10, 0.25],
+            [-0.27, -0.06, 1.00, 0.92, -0.20, -0.11, -0.02, -0.03, -0.07, -0.06, -0.06, -0.01, -0.20],
+            [-0.08, 0.00, 0.92, 1.00, -0.02, 0.06, 0.17, 0.13, -0.09, -0.15, -0.14, -0.12, -0.12],
+            [0.99, 0.22, -0.20, -0.02, 1.00, 0.99, 0.97, 0.97, 0.75, 0.59, 0.58, 0.54, 0.70],
+            [0.97, 0.21, -0.11, 0.06, 0.99, 1.00, 0.99, 0.99, 0.80, 0.65, 0.64, 0.60, 0.71],
+            [0.94, 0.21, -0.02, 0.17, 0.97, 0.99, 1.00, 0.99, 0.73, 0.57, 0.56, 0.52, 0.67],
+            [0.94, 0.21, -0.03, 0.13, 0.97, 0.99, 0.99, 1.00, 0.81, 0.67, 0.66, 0.62, 0.74],
+            [0.73, 0.15, -0.07, -0.09, 0.75, 0.80, 0.73, 0.81, 1.00, 0.97, 0.97, 0.95, 0.80],
+            [0.57, 0.11, -0.06, -0.15, 0.59, 0.65, 0.57, 0.67, 0.97, 1.00, 1.00, 1.00, 0.72],
+            [0.56, 0.12, -0.06, -0.14, 0.58, 0.64, 0.56, 0.66, 0.97, 1.00, 1.00, 0.99, 0.75],
+            [0.51, 0.10, -0.01, -0.12, 0.54, 0.60, 0.52, 0.62, 0.95, 1.00, 0.99, 1.00, 0.69],
+            [0.70, 0.25, -0.20, -0.12, 0.70, 0.71, 0.67, 0.74, 0.80, 0.72, 0.75, 0.69, 1.00],
+        ],
+    },
+    "feature_importance": {
+        "note": "Permutation importance on the same held-out test set (n=1804, DK excluded) -- each band's "
+                "values shuffled across the test set (breaking its real signal, preserving its marginal "
+                "distribution and every other band untouched), re-run through the deployed model's own "
+                "ensembled predict(), accuracy drop vs. the unpermuted baseline measures how much the model "
+                "actually relies on that band. Model-agnostic, no gradients needed -- "
+                "training/eurocrops_pipeline/eval_feature_importance.py.",
+        "baseline_accuracy": 0.7134,
+        "importances": [
+            {"band": "B6", "accuracy_drop": 0.4728},
+            {"band": "B11", "accuracy_drop": 0.4024},
+            {"band": "B8", "accuracy_drop": 0.3320},
+            {"band": "B4", "accuracy_drop": 0.3287},
+            {"band": "B5", "accuracy_drop": 0.3004},
+            {"band": "B12", "accuracy_drop": 0.2583},
+            {"band": "B8A", "accuracy_drop": 0.2511},
+            {"band": "B1", "accuracy_drop": 0.2395},
+            {"band": "B3", "accuracy_drop": 0.2018},
+            {"band": "B9", "accuracy_drop": 0.1375},
+            {"band": "B7", "accuracy_drop": 0.1258},
+            {"band": "B2", "accuracy_drop": 0.0998},
+            {"band": "B10", "accuracy_drop": 0.0183},
+        ],
+    },
 }
