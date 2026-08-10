@@ -35,4 +35,6 @@ def predict_crop(payload: PredictRequest, request: Request) -> PredictResponse:
         observations_used=min(len(dates), TARGET_SEQ_LEN),
         start_date=payload.start_date,
         end_date=payload.end_date,
+        partial_range_warning=validation.partial_range_warning(payload.start_date, payload.end_date),
+        area_hectares=validation.approx_area_hectares(polygon),
     )

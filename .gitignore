@@ -7,6 +7,10 @@ backend/breizhcrops_dataset/
 # Local training run output (EuroCrops download, fetch checkpoints, trained models)
 backend/training/eurocrops_output/
 
+# Local hand-labeled / user-uploaded parcel datasets (private test data, may
+# contain embedded local-machine file-path metadata — not for the repo)
+backend/local_parcels/
+
 # Runtime logs
 *.log
 

@@ -5,6 +5,7 @@
 # API
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9  # required by FastAPI for UploadFile/form parsing (upload-aoi endpoint)
 
 # Core ML / data
 torch>=2.0.0
