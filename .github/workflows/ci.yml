@@ -1,0 +1,45 @@
+name: CI
+
+# No test suite exists yet -- this validates what actually can be validated
+# today: the frontend lints and builds, and both Docker images build
+# cleanly. Extend with real test jobs if/when a test suite lands rather
+# than faking coverage here.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service }}
+          push: false
+          # GitHub Actions cache backend -- persists Docker layers across
+          # runs (Actions runners are otherwise a fresh VM every time, so
+          # without this every PR would redownload torch/GDAL from scratch).
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
