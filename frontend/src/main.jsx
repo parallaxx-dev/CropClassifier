@@ -9,6 +9,7 @@ import App from './App.jsx'
 import ParcelBrowser from './pages/ParcelBrowser.jsx'
 import DrawAOI from './pages/DrawAOI.jsx'
 import Statistics from './pages/Statistics.jsx'
+import LiveValidation from './pages/LiveValidation.jsx'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')).render(
             <Route index element={<Navigate to="/parcels" replace />} />
             <Route path="parcels" element={<ParcelBrowser />} />
             <Route path="draw" element={<DrawAOI />} />
+            <Route path="live-validation" element={<LiveValidation />} />
             <Route path="stats" element={<Statistics />} />
           </Route>
         </Routes>
