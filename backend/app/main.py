@@ -32,12 +32,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Crop Classifier API", lifespan=lifespan)
 
-# Local dev only: Vite's default dev server port. Tighten this before any
-# real deployment -- wide open just so the frontend can reach the API while
-# both run locally.
+# Defaults to local dev origins only. Set CORS_ALLOWED_ORIGINS (comma-
+# separated) in the deployed environment to the real frontend URL -- e.g.
+# an ECS task definition's environment block -- or every request from a
+# deployed frontend gets silently blocked by the browser.
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+allowed_origins = [
+    origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", _default_origins).split(",")
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
