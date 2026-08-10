@@ -25,7 +25,7 @@ PIPELINE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = PIPELINE_DIR.parent / "eurocrops_output" / "multi_country"
 SCRATCH_DIR = OUTPUT_DIR / "scratch"  # raw zips/extracted shapefiles — deleted per-country, not precious
 CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"  # per-country fetched-parcel pickles — precious, keep
-SAVE_PATH = OUTPUT_DIR / "best_transformer_multicountry.pth"
+SAVE_PATH = OUTPUT_DIR / "multicountry_india_custom_18class.pth"
 
 for d in (SCRATCH_DIR, CHECKPOINT_DIR):
     d.mkdir(parents=True, exist_ok=True)

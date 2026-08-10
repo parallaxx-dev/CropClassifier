@@ -28,6 +28,11 @@ from config import COUNTRIES
 REGION_NAMES: dict[int, str] = {i: c.code for i, c in enumerate(COUNTRIES)}
 REGION_NAMES[len(COUNTRIES)] = "BZH"
 REGION_NAMES[len(COUNTRIES) + 1] = "IN"
+REGION_NAMES[len(COUNTRIES) + 2] = "CUSTOM"  # hand-labeled parcels, see
+# app/services/custom_parcels.py -- never went through the country-shapefile
+# sampling path, but still needs a region id so run_train.py's
+# region_id_for_checkpoint("CUSTOM_fetched.pkl") doesn't raise, even though
+# region-conditioning itself isn't used by the deployed (noregions) model.
 REGION_NAME_TO_ID: dict[str, int] = {v: k for k, v in REGION_NAMES.items()}
 NUM_REGIONS = len(REGION_NAMES)
 

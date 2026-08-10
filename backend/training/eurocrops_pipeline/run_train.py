@@ -10,6 +10,7 @@ Run: ../.venv/bin/python run_train.py [--breizhcrops] [--epochs 20] [--windowing
 """
 
 import argparse
+import json
 import pickle
 
 import numpy as np
@@ -28,16 +29,27 @@ from regions import NUM_REGIONS, region_id_for_checkpoint
 from taxonomy import CLASS_NAME_TO_ID, NUM_CLASSES
 
 
-def load_all_fetched(include_breizhcrops: bool) -> tuple[list[np.ndarray], list, np.ndarray, np.ndarray]:
+def load_all_fetched(
+    include_breizhcrops: bool, exclude_codes: set[str] | None = None
+) -> tuple[list[np.ndarray], list, np.ndarray, np.ndarray]:
     """Combine every per-country *_fetched.pkl (and optionally BZH_fetched.pkl)
     into flat raw_sequences / dates_list / labels / region_ids arrays. Region id
     is derived from which checkpoint file a parcel came from -- the fetch
-    pipeline already segregates by source, so no extra bookkeeping is needed."""
+    pipeline already segregates by source, so no extra bookkeeping is needed.
+
+    exclude_codes skips specific region codes outright -- for a country whose
+    background fetch (run_fetch.py) is still mid-run when a retrain is kicked
+    off, so a moving-target partial fetch doesn't silently get folded in (see
+    the DE_BB "partial fetch" mistake this project already made once)."""
     raw_sequences, dates_list, labels, region_ids = [], [], [], []
+    exclude_codes = exclude_codes or set()
 
     checkpoint_files = sorted(CHECKPOINT_DIR.glob("*_fetched.pkl"))
     if not include_breizhcrops:
         checkpoint_files = [p for p in checkpoint_files if not p.name.startswith("BZH_")]
+    checkpoint_files = [
+        p for p in checkpoint_files if p.name.removesuffix("_fetched.pkl") not in exclude_codes
+    ]
 
     if not checkpoint_files:
         raise FileNotFoundError(
@@ -128,6 +140,12 @@ def main():
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--windowing", action="store_true", help="enable partial-season window augmentation (off by default per plan)")
     parser.add_argument("--regions", action="store_true", help="condition the model on region/country identity (see regions.py)")
+    parser.add_argument("--dump-json", type=str, default=None,
+                         help="write final single-draw + ensembled eval dicts to this path, "
+                              "for hand-updating app/data/model_stats.py after a retrain")
+    parser.add_argument("--exclude", action="append", default=[],
+                         help="region code to skip entirely (repeatable) -- for a country whose "
+                              "background fetch is still mid-run")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -137,7 +155,9 @@ def main():
         print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 
     print("Loading fetched parcels...")
-    raw_sequences, dates_list, labels, region_ids = load_all_fetched(include_breizhcrops=args.breizhcrops)
+    raw_sequences, dates_list, labels, region_ids = load_all_fetched(
+        include_breizhcrops=args.breizhcrops, exclude_codes=set(args.exclude)
+    )
     print(f"Total: {len(raw_sequences)} parcels, {len(set(labels.tolist()))} classes present, "
           f"{len(set(region_ids.tolist()))} regions present, region-conditioning={'ON' if args.regions else 'off'}")
 
@@ -161,8 +181,22 @@ def main():
     model = train(train_dataset, test_dataset, args.epochs, device, num_regions)
 
     print("\nFinal evaluation:")
-    evaluate_single_draw(model, test_dataset, device)
-    evaluate_ensembled(model, test_raw, test_labels, test_regions, device)
+    single_draw_report = evaluate_single_draw(model, test_dataset, device)
+    ensembled_report = evaluate_ensembled(model, test_raw, test_labels, test_regions, device)
+
+    if args.dump_json:
+        with open(args.dump_json, "w") as f:
+            json.dump(
+                {
+                    "n_train": len(train_dataset),
+                    "n_test": len(test_dataset),
+                    "single_draw": single_draw_report,
+                    "ensembled": ensembled_report,
+                },
+                f,
+                indent=2,
+            )
+        print(f"\nwrote eval report to {args.dump_json}")
 
 
 if __name__ == "__main__":

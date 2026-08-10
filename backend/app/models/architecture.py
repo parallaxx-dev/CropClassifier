@@ -1,8 +1,9 @@
 """
 model.py — Transformer architecture for BreizhCrops time-series classification.
 
-Must match the architecture used to produce best_transformer_breizh.pth exactly,
-or torch.load_state_dict() will fail / silently load mismatched weights.
+Must match the architecture used to produce the deployed checkpoint (see
+app/config.py's CHECKPOINT_PATH) exactly, or torch.load_state_dict() will
+fail / silently load mismatched weights.
 """
 
 import numpy as np

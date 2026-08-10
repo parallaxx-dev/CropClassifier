@@ -37,11 +37,12 @@ RESOLUTION_METERS = 10
 # order and must keep matching the checkpoint exactly.
 #
 # Plain 1:1 mapping, no cross-wiring. The B2/B10 swap previously here existed
-# only to match a quirk in BreizhCrops' own stored data (best_transformer_breizh.pth).
-# The current checkpoint (best_transformer_eurocrops.pth) was trained on real,
-# correctly-labeled bands fetched through this same pipeline, so reproducing
-# that swap here would reintroduce the exact class of bug it existed to work
-# around — feeding the model bands it never saw during training.
+# only to match a quirk in BreizhCrops' own stored data (the original
+# breizhcrops_france_9class.pth checkpoint). Every checkpoint trained since
+# (see backend/*.pth) was trained on real, correctly-labeled bands fetched
+# through this same pipeline, so reproducing that swap here would reintroduce
+# the exact class of bug it existed to work around — feeding the model bands
+# it never saw during training.
 _SH_BAND_NAMES = {
     "B1": "B01", "B2": "B02", "B3": "B03", "B4": "B04", "B5": "B05",
     "B6": "B06", "B7": "B07", "B8": "B08", "B8A": "B8A", "B9": "B09",
