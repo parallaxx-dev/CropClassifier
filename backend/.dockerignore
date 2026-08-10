@@ -1,0 +1,30 @@
+# Secrets -- never bake these into an image. Injected at container runtime
+# instead (see Dockerfile's comment above CMD).
+.env
+*.env
+
+# Local dev venv / bytecode
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local-only reference data + training pipeline -- not needed to serve a
+# prediction, only app/ is (see Dockerfile).
+training/
+breizhcrops_dataset/
+local_parcels/
+
+# Legacy checkpoints -- app/config.py's CHECKPOINT_PATH loads exactly one
+# file (multicountry_india_custom_18class.pth, copied explicitly in the
+# Dockerfile); these are historical/unused by the running app.
+breizhcrops_france_9class.pth
+eurocrops_france_11class.pth
+multicountry_11class_at_be-partial.pth
+multicountry_11class_backup.pth
+multicountry_india_18class_noregions_2026-08-09.pth
+
+# Misc
+*.log
+.git/
+.gitignore
