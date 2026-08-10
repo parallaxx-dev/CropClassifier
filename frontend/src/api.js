@@ -1,7 +1,12 @@
 // Thin fetch wrappers around the FastAPI backend. No axios -- plain fetch is
 // enough for this many endpoints and keeps the dependency list small.
 
-const API_BASE = 'http://localhost:9000/api/v1'
+// VITE_API_BASE is a build-time env var (Vite inlines import.meta.env.* into
+// the bundle at build time, not read at container runtime) -- set it when
+// building the frontend image so it points at wherever the backend actually
+// runs (an ECS service's ALB URL in production), instead of hardcoding the
+// local dev backend port. Falls back to local dev when unset.
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:9000/api/v1'
 
 async function get(path) {
   const res = await fetch(`${API_BASE}${path}`)
