@@ -1,0 +1,128 @@
+{
+  "AT_1406": {
+    "predicted_class": "vineyards",
+    "confidence": 0.9041029810905457,
+    "observations_used": 22,
+    "error": null
+  },
+  "AT_1432": {
+    "predicted_class": "vineyards",
+    "confidence": 0.5099053978919983,
+    "observations_used": 21,
+    "error": null
+  },
+  "AT_1412": {
+    "predicted_class": "vineyards",
+    "confidence": 0.8749287128448486,
+    "observations_used": 20,
+    "error": null
+  },
+  "BE_VLG_1250": {
+    "predicted_class": "rapeseed",
+    "confidence": 0.24378006160259247,
+    "observations_used": 34,
+    "error": null
+  },
+  "BE_VLG_1270": {
+    "predicted_class": "vineyards",
+    "confidence": 0.570233941078186,
+    "observations_used": 34,
+    "error": null
+  },
+  "BE_VLG_1303": {
+    "predicted_class": "vineyards",
+    "confidence": 0.5320545434951782,
+    "observations_used": 33,
+    "error": null
+  },
+  "DE_BB_1204": {
+    "predicted_class": "triticale",
+    "confidence": 0.4415382444858551,
+    "observations_used": 18,
+    "error": null
+  },
+  "DE_BB_482": {
+    "predicted_class": "fruit",
+    "confidence": 0.35759082436561584,
+    "observations_used": 12,
+    "error": null
+  },
+  "DE_BB_80": {
+    "predicted_class": "barley",
+    "confidence": 0.7275140285491943,
+    "observations_used": 11,
+    "error": null
+  },
+  "DE_LS_1209": {
+    "predicted_class": "wheat",
+    "confidence": 0.655388355255127,
+    "observations_used": 25,
+    "error": null
+  },
+  "DE_LS_1234": {
+    "predicted_class": "wheat",
+    "confidence": 0.6712434887886047,
+    "observations_used": 21,
+    "error": null
+  },
+  "DE_LS_1164": {
+    "predicted_class": "wheat",
+    "confidence": 0.5040385723114014,
+    "observations_used": 24,
+    "error": null
+  },
+  "DE_NRW_1226": {
+    "predicted_class": "triticale",
+    "confidence": 0.4211994409561157,
+    "observations_used": 17,
+    "error": null
+  },
+  "DE_NRW_115": {
+    "predicted_class": "barley",
+    "confidence": 0.6440539360046387,
+    "observations_used": 10,
+    "error": null
+  },
+  "DE_NRW_1185": {
+    "predicted_class": "wheat",
+    "confidence": 0.8126256465911865,
+    "observations_used": 12,
+    "error": null
+  },
+  "IN_858": {
+    "predicted_class": "fallow",
+    "confidence": 0.6377439498901367,
+    "observations_used": 31,
+    "error": null
+  },
+  "IN_851": {
+    "predicted_class": "fallow",
+    "confidence": 0.6086729168891907,
+    "observations_used": 31,
+    "error": null
+  },
+  "IN_852": {
+    "predicted_class": "fallow",
+    "confidence": 0.584938108921051,
+    "observations_used": 31,
+    "error": null
+  },
+  "CUSTOM_73": {
+    "predicted_class": "wheat",
+    "confidence": 0.7583433389663696,
+    "observations_used": 19,
+    "error": null
+  },
+  "CUSTOM_72": {
+    "predicted_class": "wheat",
+    "confidence": 0.7415785789489746,
+    "observations_used": 21,
+    "error": null
+  },
+  "CUSTOM_15": {
+    "predicted_class": "wheat",
+    "confidence": 0.6832762956619263,
+    "observations_used": 19,
+    "error": null
+  }
+}

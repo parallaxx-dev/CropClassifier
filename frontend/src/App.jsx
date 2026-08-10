@@ -24,6 +24,11 @@ function App() {
             </NavLink>
           </li>
           <li>
+            <NavLink to="/live-validation" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Live Validation
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/stats" className={({ isActive }) => (isActive ? 'active' : '')}>
               Statistics
             </NavLink>

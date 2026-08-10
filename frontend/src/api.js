@@ -27,6 +27,19 @@ export function fetchParcels(region, limit = 40) {
   return get(`/parcels?${params.toString()}`)
 }
 
+export function fetchDemoParcels() {
+  return get('/demo/parcels')
+}
+
+export async function repredictDemoParcels() {
+  const res = await fetch(`${API_BASE}/demo/repredict`, { method: 'POST' })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`repredict failed (${res.status}): ${body}`)
+  }
+  return res.json()
+}
+
 export async function uploadAoiFile(file) {
   const formData = new FormData()
   formData.append('file', file)
