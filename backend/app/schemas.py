@@ -34,3 +34,5 @@ class PredictResponse(BaseModel):
     observations_used: int
     start_date: date
     end_date: date
+    partial_range_warning: str | None = None
+    area_hectares: float
