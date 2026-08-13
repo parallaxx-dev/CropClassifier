@@ -9,11 +9,28 @@ __pycache__/
 **/__pycache__/
 *.pyc
 
-# Local-only reference data + training pipeline -- not needed to serve a
-# prediction, only app/ is (see Dockerfile).
-training/
+# Training pipeline scripts + raw reference datasets -- not needed to serve
+# a prediction. What IS needed: the small (~6.5MB total) *_sampled_geoms.geojson
+# parcel-geometry checkpoints and local_parcels/ (~130KB), which
+# services/parcels.py + services/demo_parcels.py read to power the Parcel
+# Browser / Live Validation pages -- excluded from git (see .gitignore) but
+# deliberately still copied into the image below (Dockerfile), since the
+# deployed API is useless for parcel browsing without them. GeoJSON, not the
+# *_sampled_geoms.pkl the training pipeline's own resume logic uses --
+# pickle doesn't survive being read back by a different pandas/geopandas
+# build than the one that wrote it (a real deploy hit this), so the .pkl
+# variants are excluded below alongside the other training-only pickles.
+training/eurocrops_pipeline/
+training/*.py
+training/*.ipynb
+training/eurocrops_output/multi_country/checkpoints/*_fetched.pkl
+training/eurocrops_output/multi_country/checkpoints/*_sampled_geoms.pkl
+training/eurocrops_output/multi_country/scratch/
+training/eurocrops_output/multi_country/*.pth
+training/eurocrops_output/multi_country/*.log
+training/eurocrops_output/*.json
+training/eurocrops_output/*.zip
 breizhcrops_dataset/
-local_parcels/
 
 # Legacy checkpoints -- app/config.py's CHECKPOINT_PATH loads exactly one
 # file (multicountry_india_custom_18class.pth, copied explicitly in the

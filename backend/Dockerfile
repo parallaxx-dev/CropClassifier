@@ -28,11 +28,24 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 RUN pip install --no-cache-dir -r requirements.txt
 
 # App code + the one checkpoint actually loaded at startup (app/config.py's
-# CHECKPOINT_PATH). The other legacy checkpoints in backend/ and everything
-# under training/ are excluded via .dockerignore -- neither is needed to
-# serve a prediction.
+# CHECKPOINT_PATH). The other legacy checkpoints in backend/ are excluded
+# via .dockerignore -- not needed to serve a prediction.
 COPY app/ ./app/
 COPY multicountry_india_custom_18class.pth .
+
+# Parcel geometry data for the Parcel Browser / Live Validation pages
+# (services/parcels.py, services/demo_parcels.py) -- both paths are
+# gitignored (large training output / private local data, see
+# backend/.gitignore) but small enough (~6.5MB total) to bake into the
+# image directly rather than standing up S3 + a startup-fetch step for it.
+# GeoJSON, not the training pipeline's own *_sampled_geoms.pkl -- pickle is
+# tied to the exact pandas/geopandas build that wrote it and does NOT
+# survive being read back by a different one (hit directly: pandas 3.x's
+# StringDtype array layout failed to unpickle against the older pandas this
+# image's requirements.txt resolved). See fetch.py's save_geoms_checkpoint().
+COPY training/eurocrops_output/multi_country/checkpoints/*_sampled_geoms.geojson \
+     ./training/eurocrops_output/multi_country/checkpoints/
+COPY local_parcels/ ./local_parcels/
 
 # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET are read from the environment
 # (app/config.py's load_dotenv() is a no-op if backend/.env doesn't exist,

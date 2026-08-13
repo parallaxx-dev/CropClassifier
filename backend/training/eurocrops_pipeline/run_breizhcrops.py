@@ -15,6 +15,7 @@ import argparse
 import pickle
 from datetime import date
 
+import fetch
 import sampling
 from config import BREIZHCROPS_SHP_PATH, BREIZHCROPS_YEAR, CHECKPOINT_DIR
 from fetch import fetch_all
@@ -40,8 +41,7 @@ def main():
         if "CODE_CULTU" not in schema_probe.columns:
             raise ValueError(f"BreizhCrops shapefile missing CODE_CULTU column: {schema_probe.columns.tolist()}")
         sampled = sampling.sample_breizhcrops(BREIZHCROPS_SHP_PATH)
-        with open(geoms_ckpt, "wb") as f:
-            pickle.dump(sampled, f)
+        fetch.save_geoms_checkpoint(sampled, geoms_ckpt)
 
     if args.dry_run:
         print(f"[BZH] dry-run: would fetch {len(sampled)} parcels, stopping here")

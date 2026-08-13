@@ -17,6 +17,7 @@ import pickle
 from datetime import date
 
 import agrifieldnet
+import fetch
 from config import CHECKPOINT_DIR
 from fetch import fetch_all
 
@@ -36,8 +37,7 @@ def main():
         print(f"[IN] reusing already-sampled geometries ({len(sampled)} parcels)")
     else:
         sampled = agrifieldnet.sample_fields(n_per_class=args.n_per_class)
-        with open(geoms_ckpt, "wb") as f:
-            pickle.dump(sampled, f)
+        fetch.save_geoms_checkpoint(sampled, geoms_ckpt)
 
     if args.dry_run:
         print(f"[IN] dry-run: would fetch {len(sampled)} parcels, stopping here")

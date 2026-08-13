@@ -50,8 +50,7 @@ def run_country(country, dry_run: bool = False) -> None:
                   f"check this country's data quality before trusting its sample ***")
 
         sampled = sampling.sample_country(shp_path, country)
-        with open(geoms_ckpt, "wb") as f:
-            pickle.dump(sampled, f)
+        fetch.save_geoms_checkpoint(sampled, geoms_ckpt)
         download.cleanup(country)
 
     if dry_run:

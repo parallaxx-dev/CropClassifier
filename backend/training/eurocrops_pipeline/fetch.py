@@ -23,7 +23,9 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
+from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
 from sentinelhub import CRS, DataCollection, Geometry, SentinelHubStatistical, SHConfig
 from shapely.geometry import Polygon, mapping
@@ -82,6 +84,21 @@ function evaluatePixel(sample) {{
 
 
 _shared_data_collection: DataCollection | None = None
+
+
+def save_geoms_checkpoint(sampled: gpd.GeoDataFrame, geoms_ckpt_path: Path) -> None:
+    """Writes the sampled-geometries checkpoint in BOTH formats: the .pkl
+    the training pipeline's own resume logic reads back (fast, and fine --
+    same venv writes and reads it), and a companion .geojson for
+    app/services/parcels.py + demo_parcels.py, which run in a *different*
+    environment (a Docker image) where pickle's binary coupling to the
+    exact pandas/geopandas build that wrote it is a real, previously-hit
+    failure mode (pandas 3.x's StringDtype array layout failing to unpickle
+    against an older pandas resolved at Docker build time). GeoJSON has no
+    such cross-version coupling."""
+    with open(geoms_ckpt_path, "wb") as f:
+        pickle.dump(sampled, f)
+    sampled.to_file(geoms_ckpt_path.with_suffix(".geojson"), driver="GeoJSON")
 
 
 def get_data_collection(config: SHConfig) -> DataCollection:

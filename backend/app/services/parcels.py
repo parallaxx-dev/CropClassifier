@@ -4,19 +4,27 @@ for the frontend's parcel-browser page (pick a real, pre-outlined field
 instead of drawing one).
 
 Two independent sources, merged transparently:
-1. The training pipeline's *_sampled_geoms.pkl checkpoints
+1. The training pipeline's *_sampled_geoms.geojson checkpoints
    (backend/training/eurocrops_output/, gitignored -- local training-run
    output, not shipped with the repo). If that directory doesn't exist (a
    fresh clone that hasn't run any fetch yet), that source just contributes
    nothing rather than erroring -- the parcel browser degrades to "no
    parcels available yet" for those regions, not a crash.
+
+   GeoJSON, not the training pipeline's own *_sampled_geoms.pkl -- pickle is
+   a binary format tied to the exact pandas/geopandas build that wrote it,
+   and a real deploy hit this directly (pandas 3.x's new StringDtype array
+   layout failed to unpickle against an older pandas resolved by a Docker
+   build). GeoJSON has no such cross-version coupling. The fetch scripts
+   (run_fetch.py/run_custom.py/run_agrifieldnet.py/run_breizhcrops.py) write
+   both alongside each other -- the .pkl for the training pipeline's own
+   fast resume-checkpoint reads, the .geojson for this file.
 2. custom_parcels.CUSTOM_REGIONS -- small, separately-registered
    user-provided datasets (e.g. hand-labeled test sets) that never went
    through the training pipeline at all. Each of these regions can itself be
    built from multiple source files (see custom_parcels.py).
 """
 
-import pickle
 from pathlib import Path
 
 import geopandas as gpd
@@ -47,10 +55,9 @@ REGION_NAMES = {
 def list_regions() -> list[dict]:
     regions = []
     if CHECKPOINT_DIR.exists():
-        for path in sorted(CHECKPOINT_DIR.glob("*_sampled_geoms.pkl")):
-            code = path.name.removesuffix("_sampled_geoms.pkl")
-            with open(path, "rb") as f:
-                gdf = pickle.load(f)
+        for path in sorted(CHECKPOINT_DIR.glob("*_sampled_geoms.geojson")):
+            code = path.name.removesuffix("_sampled_geoms.geojson")
+            gdf = gpd.read_file(path)
             regions.append({"code": code, "name": REGION_NAMES.get(code, code), "count": len(gdf)})
 
     for code, entry in CUSTOM_REGIONS.items():
@@ -71,14 +78,13 @@ def get_parcels_geojson(region: str | None = None, limit: int = 40) -> dict:
     features = []
 
     if CHECKPOINT_DIR.exists():
-        paths = sorted(CHECKPOINT_DIR.glob("*_sampled_geoms.pkl"))
+        paths = sorted(CHECKPOINT_DIR.glob("*_sampled_geoms.geojson"))
         if region:
-            paths = [p for p in paths if p.name == f"{region}_sampled_geoms.pkl"]
+            paths = [p for p in paths if p.name == f"{region}_sampled_geoms.geojson"]
 
         for path in paths:
-            code = path.name.removesuffix("_sampled_geoms.pkl")
-            with open(path, "rb") as f:
-                gdf: gpd.GeoDataFrame = pickle.load(f)
+            code = path.name.removesuffix("_sampled_geoms.geojson")
+            gdf: gpd.GeoDataFrame = gpd.read_file(path)
             sample = gdf.sample(n=min(limit, len(gdf)), random_state=0) if len(gdf) > limit else gdf
             for idx, row in sample.iterrows():
                 features.append({
