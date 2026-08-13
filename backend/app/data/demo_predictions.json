@@ -1,128 +1,314 @@
 {
-  "AT_1406": {
-    "predicted_class": "vineyards",
-    "confidence": 0.9041029810905457,
-    "observations_used": 22,
-    "error": null
-  },
-  "AT_1432": {
-    "predicted_class": "vineyards",
-    "confidence": 0.5099053978919983,
-    "observations_used": 21,
-    "error": null
-  },
-  "AT_1412": {
-    "predicted_class": "vineyards",
-    "confidence": 0.8749287128448486,
-    "observations_used": 20,
-    "error": null
-  },
-  "BE_VLG_1250": {
+  "BZH_8808": {
     "predicted_class": "rapeseed",
-    "confidence": 0.24378006160259247,
-    "observations_used": 34,
+    "confidence": 0.9610962867736816,
+    "observations_used": 15,
     "error": null
   },
-  "BE_VLG_1270": {
-    "predicted_class": "vineyards",
-    "confidence": 0.570233941078186,
-    "observations_used": 34,
+  "AT_899": {
+    "predicted_class": "rapeseed",
+    "confidence": 0.9723643064498901,
+    "observations_used": 49,
     "error": null
   },
-  "BE_VLG_1303": {
-    "predicted_class": "vineyards",
-    "confidence": 0.5320545434951782,
-    "observations_used": 33,
+  "IN_7388": {
+    "predicted_class": "maize",
+    "confidence": 0.5243170261383057,
+    "observations_used": 28,
     "error": null
   },
-  "DE_BB_1204": {
-    "predicted_class": "triticale",
-    "confidence": 0.4415382444858551,
-    "observations_used": 18,
-    "error": null
-  },
-  "DE_BB_482": {
-    "predicted_class": "fruit",
-    "confidence": 0.35759082436561584,
-    "observations_used": 12,
-    "error": null
-  },
-  "DE_BB_80": {
-    "predicted_class": "barley",
-    "confidence": 0.7275140285491943,
-    "observations_used": 11,
-    "error": null
-  },
-  "DE_LS_1209": {
-    "predicted_class": "wheat",
-    "confidence": 0.655388355255127,
-    "observations_used": 25,
-    "error": null
-  },
-  "DE_LS_1234": {
-    "predicted_class": "wheat",
-    "confidence": 0.6712434887886047,
-    "observations_used": 21,
-    "error": null
-  },
-  "DE_LS_1164": {
-    "predicted_class": "wheat",
-    "confidence": 0.5040385723114014,
-    "observations_used": 24,
-    "error": null
-  },
-  "DE_NRW_1226": {
-    "predicted_class": "triticale",
-    "confidence": 0.4211994409561157,
+  "IN_7320": {
+    "predicted_class": "maize",
+    "confidence": 0.5201858282089233,
     "observations_used": 17,
     "error": null
   },
-  "DE_NRW_115": {
+  "DE_NRW_6319": {
+    "predicted_class": "potatoes",
+    "confidence": 0.8980375528335571,
+    "observations_used": 13,
+    "error": null
+  },
+  "DE_LS_4892": {
+    "predicted_class": "potatoes",
+    "confidence": 0.5764127969741821,
+    "observations_used": 20,
+    "error": null
+  },
+  "BZH_8130": {
     "predicted_class": "barley",
-    "confidence": 0.6440539360046387,
-    "observations_used": 10,
+    "confidence": 0.5017504692077637,
+    "observations_used": 15,
     "error": null
   },
-  "DE_NRW_1185": {
+  "DE_NRW_5698": {
+    "predicted_class": "fruit",
+    "confidence": 0.4817827343940735,
+    "observations_used": 13,
+    "error": null
+  },
+  "DE_BB_3861": {
+    "predicted_class": "sunflower",
+    "confidence": 0.7344706654548645,
+    "observations_used": 24,
+    "error": null
+  },
+  "AT_1032": {
+    "predicted_class": "sunflower",
+    "confidence": 0.6430372595787048,
+    "observations_used": 44,
+    "error": null
+  },
+  "DE_LS_5466": {
+    "predicted_class": "meadow",
+    "confidence": 0.22488945722579956,
+    "observations_used": 22,
+    "error": null
+  },
+  "AT_1302": {
+    "predicted_class": "vineyards",
+    "confidence": 0.9305359125137329,
+    "observations_used": 18,
+    "error": null
+  },
+  "BZH_9088": {
+    "predicted_class": "barley",
+    "confidence": 0.43527930974960327,
+    "observations_used": 17,
+    "error": null
+  },
+  "DE_LS_5567": {
+    "predicted_class": "triticale",
+    "confidence": 0.7003306746482849,
+    "observations_used": 26,
+    "error": null
+  },
+  "DE_BB_3421": {
+    "predicted_class": "fruit",
+    "confidence": 0.47344017028808594,
+    "observations_used": 26,
+    "error": null
+  },
+  "DE_BB_3388": {
+    "predicted_class": "fruit",
+    "confidence": 0.5022615790367126,
+    "observations_used": 31,
+    "error": null
+  },
+  "BE_VLG_2549": {
+    "predicted_class": "triticale",
+    "confidence": 0.799238920211792,
+    "observations_used": 35,
+    "error": null
+  },
+  "AT_242": {
+    "predicted_class": "nuts",
+    "confidence": 0.44686734676361084,
+    "observations_used": 50,
+    "error": null
+  },
+  "IN_7209": {
     "predicted_class": "wheat",
-    "confidence": 0.8126256465911865,
-    "observations_used": 12,
+    "confidence": 0.3135301470756531,
+    "observations_used": 27,
     "error": null
   },
-  "IN_858": {
+  "IN_7936": {
     "predicted_class": "fallow",
-    "confidence": 0.6377439498901367,
-    "observations_used": 31,
+    "confidence": 0.587846040725708,
+    "observations_used": 28,
     "error": null
   },
-  "IN_851": {
+  "DE_BB_3474": {
+    "predicted_class": "meadow",
+    "confidence": 0.3698365390300751,
+    "observations_used": 23,
+    "error": null
+  },
+  "IN_7228": {
     "predicted_class": "fallow",
-    "confidence": 0.6086729168891907,
-    "observations_used": 31,
+    "confidence": 0.6053769588470459,
+    "observations_used": 30,
     "error": null
   },
-  "IN_852": {
-    "predicted_class": "fallow",
-    "confidence": 0.584938108921051,
-    "observations_used": 31,
+  "IN_7741": {
+    "predicted_class": "mustard",
+    "confidence": 0.39217403531074524,
+    "observations_used": 39,
     "error": null
   },
-  "CUSTOM_73": {
+  "IN_7990": {
     "predicted_class": "wheat",
-    "confidence": 0.7583433389663696,
+    "confidence": 0.39246124029159546,
+    "observations_used": 32,
+    "error": null
+  },
+  "IN_7459": {
+    "predicted_class": "mustard",
+    "confidence": 0.3534690737724304,
+    "observations_used": 41,
+    "error": null
+  },
+  "IN_7024": {
+    "predicted_class": "mustard",
+    "confidence": 0.3139278292655945,
+    "observations_used": 39,
+    "error": null
+  },
+  "AT_896": {
+    "predicted_class": "rapeseed",
+    "confidence": 0.9595239162445068,
+    "observations_used": 42,
+    "error": null
+  },
+  "AT_811": {
+    "predicted_class": "rapeseed",
+    "confidence": 0.7511446475982666,
+    "observations_used": 14,
+    "error": null
+  },
+  "BE_VLG_1853": {
+    "predicted_class": "maize",
+    "confidence": 0.8103671669960022,
+    "observations_used": 26,
+    "error": null
+  },
+  "BZH_8466": {
+    "predicted_class": "maize",
+    "confidence": 0.9305357933044434,
+    "observations_used": 15,
+    "error": null
+  },
+  "DE_NRW_6340": {
+    "predicted_class": "potatoes",
+    "confidence": 0.4891589879989624,
+    "observations_used": 28,
+    "error": null
+  },
+  "BE_VLG_2225": {
+    "predicted_class": "potatoes",
+    "confidence": 0.9615181684494019,
+    "observations_used": 26,
+    "error": null
+  },
+  "DE_LS_4338": {
+    "predicted_class": "barley",
+    "confidence": 0.8764155507087708,
+    "observations_used": 25,
+    "error": null
+  },
+  "BE_VLG_1515": {
+    "predicted_class": "barley",
+    "confidence": 0.8981049060821533,
+    "observations_used": 27,
+    "error": null
+  },
+  "DE_NRW_6673": {
+    "predicted_class": "sunflower",
+    "confidence": 0.6972082257270813,
+    "observations_used": 24,
+    "error": null
+  },
+  "AT_952": {
+    "predicted_class": "rapeseed",
+    "confidence": 0.383897602558136,
+    "observations_used": 54,
+    "error": null
+  },
+  "DE_NRW_6844": {
+    "predicted_class": "vineyards",
+    "confidence": 0.7280445098876953,
+    "observations_used": 26,
+    "error": null
+  },
+  "BE_VLG_2621": {
+    "predicted_class": "vineyards",
+    "confidence": 0.46733349561691284,
+    "observations_used": 28,
+    "error": null
+  },
+  "IN_7523": {
+    "predicted_class": "mustard",
+    "confidence": 0.352622389793396,
+    "observations_used": 43,
+    "error": null
+  },
+  "DE_NRW_6997": {
+    "predicted_class": "wheat",
+    "confidence": 0.8600034117698669,
+    "observations_used": 25,
+    "error": null
+  },
+  "DE_LS_4812": {
+    "predicted_class": "meadow",
+    "confidence": 0.4659850597381592,
+    "observations_used": 24,
+    "error": null
+  },
+  "BE_VLG_1930": {
+    "predicted_class": "wheat",
+    "confidence": 0.7995636463165283,
+    "observations_used": 35,
+    "error": null
+  },
+  "BZH_8969": {
+    "predicted_class": "triticale",
+    "confidence": 0.4499262869358063,
+    "observations_used": 13,
+    "error": null
+  },
+  "DE_NRW_5865": {
+    "predicted_class": "meadow",
+    "confidence": 0.66920006275177,
     "observations_used": 19,
     "error": null
   },
-  "CUSTOM_72": {
-    "predicted_class": "wheat",
-    "confidence": 0.7415785789489746,
+  "IN_7100": {
+    "predicted_class": "fallow",
+    "confidence": 0.3087742328643799,
+    "observations_used": 29,
+    "error": null
+  },
+  "IN_7901": {
+    "predicted_class": "fallow",
+    "confidence": 0.46407532691955566,
     "observations_used": 21,
     "error": null
   },
-  "CUSTOM_15": {
+  "AT_526": {
+    "predicted_class": "nuts",
+    "confidence": 0.4310808777809143,
+    "observations_used": 58,
+    "error": null
+  },
+  "IN_7236": {
+    "predicted_class": "fallow",
+    "confidence": 0.5609893798828125,
+    "observations_used": 29,
+    "error": null
+  },
+  "IN_7747": {
     "predicted_class": "wheat",
-    "confidence": 0.6832762956619263,
-    "observations_used": 19,
+    "confidence": 0.33521348237991333,
+    "observations_used": 25,
+    "error": null
+  },
+  "IN_7989": {
+    "predicted_class": "sugarcane",
+    "confidence": 0.37928274273872375,
+    "observations_used": 28,
+    "error": null
+  },
+  "IN_7465": {
+    "predicted_class": "mustard",
+    "confidence": 0.34701138734817505,
+    "observations_used": 40,
+    "error": null
+  },
+  "IN_7034": {
+    "predicted_class": "mustard",
+    "confidence": 0.3355211615562439,
+    "observations_used": 38,
     "error": null
   }
 }

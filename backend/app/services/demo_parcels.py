@@ -19,12 +19,12 @@ Two-stage design, matching parcels.py/model_stats.py's own split between
 """
 
 import json
-import pickle
 from datetime import date
 from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 from app.config import get_color
 from app.models.inference import predict as run_prediction
@@ -33,19 +33,36 @@ from app.services.custom_parcels import CUSTOM_REGIONS, load_custom_region
 from app.services.parcels import CHECKPOINT_DIR, REGION_NAMES
 from app.services.validation import MAX_AREA_HECTARES, MIN_AREA_HECTARES, approx_area_hectares
 
-N_PER_REGION = 3
 CLUSTER_SEED = 0
+
+# Per-class quota for the demo, weighted by how well the deployed checkpoint
+# actually handles each class (see app/data/model_stats.py's per_class F1) --
+# not a flat N-per-region split. Direct request: the demo should mostly show
+# high-confidence correct predictions, with a few weaker ones, but still
+# cover every crop type -- a demo that's either all cherry-picked easy wins
+# or all misses on data-starved classes would misrepresent what this model
+# does either way. More slots for classes the model is actually good at
+# (F1 >= ~0.6), one slot each for weak/zero-F1 classes so they're still
+# visible -- those will mostly show as real misses, which is honest, not a
+# bug to hide.
+CLASS_QUOTA = {
+    "rapeseed": 2, "maize": 2, "potatoes": 2, "barley": 2,
+    "sunflower": 2, "vineyards": 2, "wheat": 2, "meadow": 2,
+    "triticale": 1, "fruit": 1, "sugarcane": 1, "fallow": 1,
+    "nuts": 1, "rice": 1, "mustard": 1,
+    "lentil": 1, "gram": 1, "garlic": 1,
+}
 
 # Full Jan1-Dec31 span for each region's own real declared/fetched year --
 # matches training exactly (a partial range measurably degrades accuracy,
 # see CLAUDE.md's known-gaps item 4 -- the demo must not repeat that
 # mistake). Kept in sync by hand with training/eurocrops_pipeline/config.py's
-# COUNTRIES table, agrifieldnet.py's AGRIFIELDNET_YEAR, and
-# run_custom.py's CUSTOM_YEAR. Also doubles as "which regions are in the
-# demo" -- exactly the 7 regions the deployed checkpoint was actually
-# trained on (see app/data/model_stats.py's training_data), not every region
-# with parcel geometries on disk (BZH/DK/CZ have geometries but weren't
-# trained on, so a mismatch there wouldn't demonstrate what this model does).
+# COUNTRIES table + BREIZHCROPS_YEAR, agrifieldnet.py's AGRIFIELDNET_YEAR,
+# and run_custom.py's CUSTOM_YEAR. Also doubles as "which regions are in the
+# demo" -- exactly the regions the deployed checkpoint was actually trained
+# on (see app/data/model_stats.py's training_data), not every region with
+# parcel geometries on disk (DK/CZ have geometries but weren't trained on,
+# so a mismatch there wouldn't demonstrate what this model does).
 REGION_YEAR = {
     "AT": 2021,
     "BE_VLG": 2021,
@@ -54,6 +71,7 @@ REGION_YEAR = {
     "DE_NRW": 2021,
     "IN": 2024,
     "CUSTOM": 2025,
+    "BZH": 2017,
 }
 
 _CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "demo_predictions.json"
@@ -69,11 +87,13 @@ def _load_region_gdf(code: str) -> gpd.GeoDataFrame:
     if code in CUSTOM_REGIONS:
         gdf = load_custom_region(CUSTOM_REGIONS[code])
     else:
-        geoms_path = CHECKPOINT_DIR / f"{code}_sampled_geoms.pkl"
+        # GeoJSON, not the training pipeline's own *_sampled_geoms.pkl -- see
+        # parcels.py's module docstring for why (pickle's cross-version
+        # incompatibility is a real failure this project hit in production).
+        geoms_path = CHECKPOINT_DIR / f"{code}_sampled_geoms.geojson"
         if not geoms_path.exists():
             return gpd.GeoDataFrame(columns=["classname", "geometry"], geometry="geometry", crs=4326)
-        with open(geoms_path, "rb") as f:
-            gdf = pickle.load(f)
+        gdf = gpd.read_file(geoms_path)
 
     if len(gdf) == 0:
         return gdf
@@ -84,31 +104,39 @@ def _load_region_gdf(code: str) -> gpd.GeoDataFrame:
     return gdf[(areas >= MIN_AREA_HECTARES) & (areas <= MAX_AREA_HECTARES)]
 
 
-def _nearest_cluster(gdf: gpd.GeoDataFrame, n: int, seed: int) -> gpd.GeoDataFrame:
-    """Anchor + its n-1 nearest neighbors by centroid distance -- real,
-    physically neighbouring fields, not a random scatter across the whole
-    country. Degrades gracefully to "all of them" if the region has <= n."""
-    if len(gdf) <= n:
-        return gdf
-    rng = np.random.default_rng(seed)
-    anchor_idx = int(rng.integers(0, len(gdf)))
-    centroids = gdf.geometry.centroid
-    anchor = centroids.iloc[anchor_idx]
-    dist = centroids.distance(anchor)
-    nearest_index = dist.nsmallest(n).index
-    return gdf.loc[nearest_index]
-
-
-def select_demo_parcels(n_per_region: int = N_PER_REGION) -> list[dict]:
-    """Deterministic list of {id, region, region_name, geometry, classname}
-    dicts -- the WHICH, independent of any prediction."""
-    selected = []
+def _load_all_regions_pooled() -> gpd.GeoDataFrame:
+    """Every trained region's parcels concatenated into one pool, tagged
+    with their source region -- selection is driven by CLASS_QUOTA now, not
+    per-region clustering, since several classes (mustard/gram/garlic in
+    India, rapeseed/barley across the EU regions) are concentrated in
+    specific regions and wouldn't be reachable from a fixed N-per-region
+    pick."""
+    parts = []
     for code in REGION_YEAR:
         gdf = _load_region_gdf(code)
         if len(gdf) == 0:
             continue
-        cluster = _nearest_cluster(gdf, n_per_region, CLUSTER_SEED)
-        for idx, row in cluster.iterrows():
+        gdf = gdf.copy()
+        gdf["region"] = code
+        parts.append(gdf)
+    if not parts:
+        return gpd.GeoDataFrame(columns=["classname", "geometry", "region"], geometry="geometry", crs=4326)
+    return gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=parts[0].crs)
+
+
+def select_demo_parcels() -> list[dict]:
+    """Deterministic (seeded) list of {id, region, region_name, geometry,
+    classname} dicts, drawn per CLASS_QUOTA -- the WHICH, independent of any
+    prediction."""
+    pooled = _load_all_regions_pooled()
+    selected = []
+    for classname, quota in CLASS_QUOTA.items():
+        class_pool = pooled[pooled["classname"] == classname]
+        if len(class_pool) == 0:
+            continue
+        sample = class_pool.sample(n=min(quota, len(class_pool)), random_state=CLUSTER_SEED)
+        for idx, row in sample.iterrows():
+            code = row["region"]
             selected.append(
                 {
                     "id": f"{code}_{idx}",
@@ -166,8 +194,8 @@ def run_predictions(parcels: list[dict], model, device=None) -> dict:
     return cache
 
 
-def get_demo_geojson(n_per_region: int = N_PER_REGION) -> dict:
-    parcels = select_demo_parcels(n_per_region)
+def get_demo_geojson() -> dict:
+    parcels = select_demo_parcels()
     cache = _load_cache()
     features = []
     for p in parcels:
