@@ -1,0 +1,40 @@
+# Optional HTTPS overlay: puts Caddy in front of the frontend's nginx and
+# gets/renews a Let's Encrypt certificate automatically. Requires DOMAIN in
+# .env, a DNS A record pointing DOMAIN at this host, and ports 80 + 443 open.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+#   (deploy/deploy.sh does this automatically when DOMAIN is set)
+
+services:
+  frontend:
+    # Caddy owns the public ports now; nginx is only reachable from it.
+    ports: !reset []
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env to use the HTTPS overlay}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here -- keep it across redeploys, or Let's Encrypt
+      # rate limits kick in after a few re-issues.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:

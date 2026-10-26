@@ -1,69 +1,46 @@
 name: CD
 
-# Builds + pushes both images to ECR on every merge to main. The actual
-# "redeploy the ECS service" step is intentionally left out below (see the
-# TODO) until the ECS cluster/service exist and their names are known --
-# pushing a new image tag alone doesn't make a running ECS service pick it
-# up.
+# Deploys to a single EC2 host on every merge to main by SSHing in and
+# running deploy/deploy.sh (git pull + docker compose up --build + health
+# check) -- the same script you'd run by hand, so there's exactly one deploy
+# path. Images are built on the host itself; no registry needed.
+#
+# Setup (Settings -> Secrets and variables -> Actions):
+#   Variables: EC2_HOST (public IP / DNS), EC2_USER (ec2-user / ubuntu),
+#              EC2_APP_DIR (repo checkout on the host, e.g. /home/ec2-user/CropClassifier)
+#   Secrets:   EC2_SSH_KEY (private key whose public half is in the host's
+#              ~/.ssh/authorized_keys)
+# Until EC2_HOST is set the job is skipped, so merges don't fail on an
+# unconfigured repo.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
-env:
-  AWS_REGION: ap-south-1
-  ECR_REGISTRY: 842351889019.dkr.ecr.ap-south-1.amazonaws.com
-  ECR_REPOSITORY: academics/cropclassifier
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
 
 jobs:
-  build-and-push:
+  deploy:
+    if: vars.EC2_HOST != ''
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      matrix:
-        service: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ vars.EC2_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
-      # Static keys for now (simplest to get working) -- consider migrating
-      # to an OIDC role (aws-actions/configure-aws-credentials's role-to-assume)
-      # later, so no long-lived AWS credentials need to live in GitHub Secrets
-      # at all.
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - uses: aws-actions/amazon-ecr-login@v2
-        id: ecr-login
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.service }}
-          push: true
-          tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}-latest
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}-${{ github.sha }}
-          # frontend-only build arg; harmless no-op for the backend build.
-          # Set the VITE_API_BASE repo variable once the backend's real ALB
-          # URL exists (Settings -> Secrets and variables -> Actions -> Variables).
-          build-args: |
-            VITE_API_BASE=${{ vars.VITE_API_BASE }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-
-      # TODO once the ECS cluster + service exist (names known): add a step
-      # here to actually roll the new image out, e.g.:
-      #
-      #   - name: Force new ECS deployment
-      #     run: |
-      #       aws ecs update-service \
-      #         --cluster <cluster-name> \
-      #         --service <service-name-for-this-matrix.service> \
-      #         --force-new-deployment
-      #
-      # Until then, pushing :latest updates the image in ECR but does NOT
-      # restart the running ECS task -- that needs an explicit redeploy.
+      - name: Deploy
+        env:
+          EC2_HOST: ${{ vars.EC2_HOST }}
+          EC2_USER: ${{ vars.EC2_USER }}
+          EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "$EC2_USER@$EC2_HOST" \
+            "cd '$EC2_APP_DIR' && git fetch origin main && git checkout main && ./deploy/deploy.sh"

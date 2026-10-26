@@ -26,6 +26,17 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+  deploy-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # backend/.env is gitignored (secrets) but required by env_file --
+      # the real values don't matter for validating the compose files.
+      - run: cp backend/.env.example backend/.env
+      - run: docker compose -f docker-compose.yml config --quiet
+      - run: DOMAIN=ci.example.com docker compose -f docker-compose.yml -f docker-compose.https.yml config --quiet
+      - run: shellcheck deploy/*.sh
+
   docker-build:
     runs-on: ubuntu-latest
     strategy:
