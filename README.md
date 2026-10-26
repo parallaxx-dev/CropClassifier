@@ -1,6 +1,8 @@
 # CROP-TYPE SEGMENTATION USING SENTINEL-2 BANDS
 ## Pixel-Level Classification of Wheat and Mustard in U.P
 
+> **Running / deploying the web app:** see [DEPLOY.md](DEPLOY.md) (Docker Compose, locally or on EC2).
+
 A two-stage deep learning pipeline to classify wheat and mustard at 10m resolution using Sentinel-2 satellite imagery, tackling extreme class imbalance where crop pixels are <0.1% of the data.
 
 
