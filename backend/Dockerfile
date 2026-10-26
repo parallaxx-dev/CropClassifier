@@ -34,25 +34,21 @@ COPY app/ ./app/
 COPY multicountry_india_custom_18class.pth .
 
 # Parcel geometry data for the Parcel Browser / Live Validation pages
-# (services/parcels.py, services/demo_parcels.py) -- both paths are
-# gitignored (large training output / private local data, see
-# backend/.gitignore) but small enough (~6.5MB total) to bake into the
-# image directly rather than standing up S3 + a startup-fetch step for it.
-# GeoJSON, not the training pipeline's own *_sampled_geoms.pkl -- pickle is
-# tied to the exact pandas/geopandas build that wrote it and does NOT
-# survive being read back by a different one (hit directly: pandas 3.x's
-# StringDtype array layout failed to unpickle against the older pandas this
-# image's requirements.txt resolved). See fetch.py's save_geoms_checkpoint().
-COPY training/eurocrops_output/multi_country/checkpoints/*_sampled_geoms.geojson \
-     ./training/eurocrops_output/multi_country/checkpoints/
-COPY local_parcels/ ./local_parcels/
+# (training/eurocrops_output/.../*_sampled_geoms.geojson and local_parcels/)
+# is deliberately NOT baked in: both paths are gitignored (local_parcels/ is
+# private), so COPYing them made the image unbuildable from a clean clone
+# (CI, a fresh EC2 box). docker-compose.yml bind-mounts them at runtime
+# instead; services/parcels.py and services/custom_parcels.py already skip
+# missing files, so the API still starts (with fewer parcel regions) when
+# they're absent.
 
 # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET are read from the environment
 # (app/config.py's load_dotenv() is a no-op if backend/.env doesn't exist,
 # which it deliberately won't in this image -- see .dockerignore). Inject
-# them at run time (docker run -e / --env-file, or an ECS task definition's
-# environment/secrets block pointing at Secrets Manager/SSM) -- never bake
-# real credentials into the image.
+# them at run time (docker-compose.yml's env_file: backend/.env, or
+# docker run --env-file) -- never bake real credentials into the image.
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --proxy-headers: requests arrive via the frontend's nginx reverse proxy,
+# so trust its X-Forwarded-* headers for client IP / scheme.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

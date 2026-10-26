@@ -10,8 +10,10 @@ COPY . .
 
 # Vite inlines import.meta.env.VITE_* at BUILD time, not read at container
 # runtime -- must be passed as a build arg, not a docker-run env var (see
-# src/api.js). Defaults to the local dev backend port if not overridden.
-ARG VITE_API_BASE=http://localhost:9000/api/v1
+# src/api.js). Defaults to the relative /api/v1 path, which nginx.conf
+# proxies to the backend container -- same-origin, so one image works on
+# any host without rebuilding for its hostname.
+ARG VITE_API_BASE=/api/v1
 ENV VITE_API_BASE=$VITE_API_BASE
 RUN npm run build
 
