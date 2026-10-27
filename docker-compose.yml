@@ -1,28 +1,60 @@
-# Local orchestration mirroring how the two services actually talk to each
-# other in production (built images, not source-mounted dev servers -- use
-# `npm run dev` / `uvicorn --reload` directly on the host for hot-reload
-# dev work, this is for testing the deployable artifact itself).
+# Runs the whole app (FastAPI backend + nginx-served React frontend) with a
+# single `docker compose up --build`, identically on a local machine and on
+# an EC2 instance.
+#
+# The browser only ever talks to the frontend container: nginx serves the
+# built React bundle and reverse-proxies /api/ to the backend container over
+# the compose network. The bundle calls the API by relative path (/api/v1),
+# so the same image works at http://localhost, an EC2 public IP, or a domain,
+# with no CORS setup and no hardcoded backend hostname.
+#
+# Setup (both local and EC2):
+#   1. cp backend/.env.example backend/.env   and fill in the CDSE credentials
+#   2. (optional) copy the gitignored parcel data onto the machine -- see the
+#      backend volumes below. Without it the app still runs, but the Parcel
+#      Browser / Live Validation pages have no parcels to show.
+#   3. docker compose up -d --build
+#
+# Ports are overridable via a root-level .env file (compose reads it
+# automatically) or the shell, e.g. FRONTEND_PORT=8090 docker compose up.
 services:
   backend:
     build: ./backend
-    ports:
-      - "9000:8000"
+    restart: unless-stopped
     env_file:
       - backend/.env  # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET (gitignored, not baked into the image)
-    environment:
-      - CORS_ALLOWED_ORIGINS=http://localhost:8080
+    # Bound to localhost only: the frontend reaches the backend over the
+    # compose network, so this is just for hitting the API/docs directly
+    # (http://localhost:9000/docs) -- it stays closed to the internet on EC2
+    # even if the security group is wide open.
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-9000}:8000"
+    # Parcel geometry for services/parcels.py + services/demo_parcels.py.
+    # Both paths are gitignored (training output / private hand-labeled
+    # data), so they're mounted at runtime rather than baked into the image
+    # -- the image then builds from a plain git clone. On EC2, rsync/scp
+    # these two directories over from the dev machine; if they're absent,
+    # Docker creates them empty and the backend degrades gracefully.
+    volumes:
+      - ./backend/training/eurocrops_output/multi_country/checkpoints:/app/training/eurocrops_output/multi_country/checkpoints:ro
+      - ./backend/local_parcels:/app/local_parcels:ro
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s  # model load at startup
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: http://localhost:9000/api/v1
+        VITE_API_BASE: /api/v1
+    restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      BACKEND_UPSTREAM: backend:8000  # host:port nginx proxies /api/ to
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

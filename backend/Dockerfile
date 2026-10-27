@@ -34,18 +34,14 @@ COPY app/ ./app/
 COPY multicountry_india_custom_18class.pth .
 
 # Parcel geometry data for the Parcel Browser / Live Validation pages
-# (services/parcels.py, services/demo_parcels.py) -- both paths are
-# gitignored (large training output / private local data, see
-# backend/.gitignore) but small enough (~6.5MB total) to bake into the
-# image directly rather than standing up S3 + a startup-fetch step for it.
-# GeoJSON, not the training pipeline's own *_sampled_geoms.pkl -- pickle is
-# tied to the exact pandas/geopandas build that wrote it and does NOT
-# survive being read back by a different one (hit directly: pandas 3.x's
-# StringDtype array layout failed to unpickle against the older pandas this
-# image's requirements.txt resolved). See fetch.py's save_geoms_checkpoint().
-COPY training/eurocrops_output/multi_country/checkpoints/*_sampled_geoms.geojson \
-     ./training/eurocrops_output/multi_country/checkpoints/
-COPY local_parcels/ ./local_parcels/
+# (services/parcels.py, services/demo_parcels.py) is NOT baked in: both
+# source paths are gitignored, so COPYing them would break any build from a
+# plain git clone (e.g. on an EC2 instance). docker-compose.yml mounts them
+# at runtime instead; these empty mount points just make the layout explicit.
+# The app reads the *_sampled_geoms.geojson files, not the training
+# pipeline's *_sampled_geoms.pkl -- pickle doesn't survive being read back
+# by a different pandas/geopandas build (see fetch.py's save_geoms_checkpoint()).
+RUN mkdir -p ./training/eurocrops_output/multi_country/checkpoints ./local_parcels
 
 # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET are read from the environment
 # (app/config.py's load_dotenv() is a no-op if backend/.env doesn't exist,

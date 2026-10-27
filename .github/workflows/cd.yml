@@ -48,10 +48,10 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}-latest
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}-${{ github.sha }}
           # frontend-only build arg; harmless no-op for the backend build.
-          # Set the VITE_API_BASE repo variable once the backend's real ALB
-          # URL exists (Settings -> Secrets and variables -> Actions -> Variables).
+          # Defaults to the relative path nginx proxies to the backend; set
+          # the VITE_API_BASE repo variable only to bypass that proxy.
           build-args: |
-            VITE_API_BASE=${{ vars.VITE_API_BASE }}
+            VITE_API_BASE=${{ vars.VITE_API_BASE || '/api/v1' }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
