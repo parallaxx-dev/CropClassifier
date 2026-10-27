@@ -1,13 +1,19 @@
 name: CD
 
-# Builds + pushes both images to ECR on every merge to main. The actual
-# "redeploy the ECS service" step is intentionally left out below (see the
-# TODO) until the ECS cluster/service exist and their names are known --
-# pushing a new image tag alone doesn't make a running ECS service pick it
-# up.
+# DISABLED: no longer runs on merges to main. Deploys now go through
+# deploy/deploy-ec2.sh (builds on the instance from an exact commit), and
+# the ECS service these images were for no longer exists. Kept runnable by
+# hand (Actions -> CD -> Run workflow) in case pushing images to ECR is
+# needed again; to re-enable automatic runs, restore:
+#   on:
+#     push:
+#       branches: [main]
+#
+# Builds + pushes both images to ECR. The actual "redeploy the ECS service"
+# step is intentionally left out below (see the TODO) -- pushing a new image
+# tag alone doesn't make a running ECS service pick it up.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 env:
   AWS_REGION: ap-south-1
