@@ -8,7 +8,9 @@ import BaseLayers from '../components/BaseLayers'
 // AgriFieldNet (India) was fetched against 2024 imagery (see
 // eurocrops_pipeline/agrifieldnet.py); every EuroCrops country uses its own
 // declared year (see eurocrops_pipeline/config.py's COUNTRIES table). This is
-// just a sane default for the date inputs -- the user can change it.
+// the year each region's true labels are valid for (shown as "Label year" on
+// the selected parcel) and the default for the date inputs -- the user can
+// change it.
 const DEFAULT_YEAR = {
   AT: 2021,
   BE_VLG: 2021,
@@ -17,6 +19,7 @@ const DEFAULT_YEAR = {
   DE_LS: 2021,
   DE_NRW: 2021,
   DK: 2019,
+  EE: 2021,
   BZH: 2017,
   IN: 2024,
   // CUSTOM: hand-labeled parcels (see app/services/custom_parcels.py) whose
@@ -107,8 +110,17 @@ export default function ParcelBrowser() {
     })
   }
 
+  function handleUseLabelYear() {
+    setStartDate(`${labelYear}-01-01`)
+    setEndDate(`${labelYear}-12-31`)
+    predictMutation.reset()
+  }
+
   const result = predictMutation.data
   const trueLabel = selected?.properties?.classname
+  const labelYear = DEFAULT_YEAR[selected?.properties?.region]
+  const usingLabelYear =
+    labelYear && startDate === `${labelYear}-01-01` && endDate === `${labelYear}-12-31`
   const match = result && trueLabel ? result.predicted_class === trueLabel : null
 
   return (
@@ -208,6 +220,25 @@ export default function ParcelBrowser() {
                     <th>True label</th>
                     <td>
                       <strong>{selected.properties.classname}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Label year</th>
+                    <td>
+                      {labelYear ? (
+                        <>
+                          {labelYear} season{' '}
+                          {usingLabelYear ? (
+                            <span style={{ fontSize: 11, color: '#555555' }}>(prediction dates match)</span>
+                          ) : (
+                            <button onClick={handleUseLabelYear} style={{ fontSize: 11 }}>
+                              Use {labelYear} for prediction
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        'unknown'
+                      )}
                     </td>
                   </tr>
                   <tr>
