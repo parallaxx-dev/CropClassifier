@@ -20,6 +20,9 @@
 services:
   backend:
     build: ./backend
+    # Tagged per release (deploy/deploy-ec2.sh sets APP_VERSION to the git
+    # commit) so a rollback can reuse an already-built image.
+    image: cropclassifier-backend:${APP_VERSION:-dev}
     restart: unless-stopped
     env_file:
       - backend/.env  # CDSE_SH_CLIENT_ID / CDSE_SH_CLIENT_SECRET (gitignored, not baked into the image)
@@ -50,6 +53,7 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE: /api/v1
+    image: cropclassifier-frontend:${APP_VERSION:-dev}
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-80}:80"
